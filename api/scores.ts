@@ -28,9 +28,15 @@ interface NormalizedMatch {
   awayScore: number | null
 }
 
-export default async function handler(req: AnyReq, res: AnyRes) {
-  const key = process.env.FOOTBALL_DATA_API_KEY
-  const competition = process.env.FOOTBALL_DATA_COMPETITION || 'WC'
+// Acessa as variáveis de ambiente sem depender dos tipos do Node
+// (mantém a função compilável com a config de TypeScript do front-end).
+const env: Record<string, string | undefined> =
+  (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env ?? {}
+
+export default async function handler(_req: AnyReq, res: AnyRes) {
+  const key = env.FOOTBALL_DATA_API_KEY
+  const competition = env.FOOTBALL_DATA_COMPETITION || 'WC'
 
   res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=120')
 
