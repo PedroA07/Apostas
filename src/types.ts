@@ -50,6 +50,8 @@ export interface Participant {
   paid: boolean
   /** Valor apostado por esta pessoa. Se ausente, usa o valor padrão do bolão. */
   betValue?: number
+  /** Chave Pix para receber o prêmio caso vença. */
+  pixKey?: string
   createdAt: number
 }
 

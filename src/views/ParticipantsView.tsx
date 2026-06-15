@@ -3,23 +3,39 @@ import {
   Banknote,
   Check,
   CircleDollarSign,
+  CopyPlus,
   Pencil,
+  QrCode,
   Trash2,
   UserPlus,
   Users,
 } from 'lucide-react'
 import { useStore } from '../store/store'
-import { Avatar, ConfirmButton, EmptyState, Modal, SectionTitle } from '../components/ui'
+import {
+  Avatar,
+  ConfirmButton,
+  CopyButton,
+  EmptyState,
+  Modal,
+  SectionTitle,
+} from '../components/ui'
 import { AVATAR_COLORS } from '../data/seed'
 import { cx, formatMoney, participantValue, potSummary } from '../utils'
 import type { Participant } from '../types'
 
 export default function ParticipantsView() {
-  const { state, addParticipant, updateParticipant, removeParticipant, togglePaid } =
-    useStore()
+  const {
+    state,
+    addParticipant,
+    updateParticipant,
+    removeParticipant,
+    togglePaid,
+    duplicateParticipant,
+  } = useStore()
   const { participants, settings } = state
   const [name, setName] = useState('')
   const [value, setValue] = useState('')
+  const [pix, setPix] = useState('')
   const [editing, setEditing] = useState<Participant | null>(null)
 
   const { collected, pending, paidCount } = potSummary(participants, settings)
@@ -27,9 +43,10 @@ export default function ParticipantsView() {
   const submit = () => {
     if (!name.trim()) return
     const v = value.trim() === '' ? undefined : Math.max(0, Number(value))
-    addParticipant(name, v)
+    addParticipant(name, v, pix)
     setName('')
     setValue('')
+    setPix('')
   }
 
   return (
@@ -37,7 +54,7 @@ export default function ParticipantsView() {
       <SectionTitle
         icon={<Users size={20} />}
         title="Participantes"
-        subtitle="Quem está no bolão, o valor de cada um e quem já pagou"
+        subtitle="Cada pessoa pode ter mais de um palpite. Informe a chave Pix para receber o prêmio."
       />
 
       {/* Resumo financeiro */}
@@ -60,7 +77,7 @@ export default function ParticipantsView() {
         </div>
         <div className="card col-span-2 p-4 sm:col-span-1">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            <Users size={14} /> Pagantes
+            <Users size={14} /> Bilhetes pagos
           </div>
           <div className="mt-1 text-lg font-extrabold text-slate-900 sm:text-xl">
             {paidCount}
@@ -82,6 +99,19 @@ export default function ParticipantsView() {
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           enterKeyHint="done"
         />
+        <div className="relative">
+          <QrCode
+            size={16}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            className="input pl-10"
+            placeholder="Chave Pix (opcional)"
+            value={pix}
+            onChange={(e) => setPix(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+          />
+        </div>
         <div className="flex gap-2">
           <MoneyInput
             value={value}
@@ -96,8 +126,11 @@ export default function ParticipantsView() {
           </button>
         </div>
         <p className="px-0.5 text-xs text-slate-400">
-          Deixe o valor em branco para usar o padrão do bolão (
-          {formatMoney(settings.buyIn, settings.currency)}).
+          Valor em branco = padrão do bolão (
+          {formatMoney(settings.buyIn, settings.currency)}). Para um segundo
+          palpite da mesma pessoa, use{' '}
+          <span className="font-semibold text-slate-500">Novo palpite</span> no
+          cartão dela.
         </p>
       </div>
 
@@ -113,50 +146,75 @@ export default function ParticipantsView() {
           {participants.map((p) => {
             const v = participantValue(p, settings.buyIn)
             return (
-              <div key={p.id} className="card flex items-center gap-3 p-3.5">
-                <Avatar name={p.name} color={p.color} size={44} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-bold text-slate-900">
-                      {p.name}
-                    </span>
-                    <span className="chip shrink-0 bg-slate-100 text-slate-600">
-                      {formatMoney(v, settings.currency)}
-                    </span>
+              <div key={p.id} className="card p-3.5">
+                <div className="flex items-start gap-3">
+                  <Avatar name={p.name} color={p.color} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-bold text-slate-900">
+                        {p.name}
+                      </span>
+                      <span className="chip shrink-0 bg-slate-100 text-slate-600">
+                        {formatMoney(v, settings.currency)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <button
+                        onClick={() => togglePaid(p.id)}
+                        className={cx(
+                          'chip',
+                          p.paid
+                            ? 'bg-pitch-100 text-pitch-700'
+                            : 'bg-amber-50 text-amber-600',
+                        )}
+                      >
+                        {p.paid ? (
+                          <>
+                            <Check size={12} /> Pago
+                          </>
+                        ) : (
+                          <>Pendente · toque p/ pagar</>
+                        )}
+                      </button>
+                      {p.pixKey && (
+                        <span className="chip max-w-full bg-blue-50 text-blue-600">
+                          <QrCode size={12} className="shrink-0" />
+                          <span className="truncate">{p.pixKey}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => togglePaid(p.id)}
-                    className={cx(
-                      'chip mt-1.5',
-                      p.paid
-                        ? 'bg-pitch-100 text-pitch-700'
-                        : 'bg-amber-50 text-amber-600',
-                    )}
-                  >
-                    {p.paid ? (
-                      <>
-                        <Check size={12} /> Pago
-                      </>
-                    ) : (
-                      <>Pendente · toque p/ marcar pago</>
-                    )}
-                  </button>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    <button
+                      onClick={() => setEditing(p)}
+                      className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      aria-label="Editar"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <ConfirmButton
+                      onConfirm={() => removeParticipant(p.id)}
+                      className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500"
+                      confirmLabel="X"
+                    >
+                      <Trash2 size={16} />
+                    </ConfirmButton>
+                  </div>
                 </div>
-                <div className="flex shrink-0 flex-col gap-1">
+                <div className="mt-2.5 flex items-center gap-2 border-t border-slate-100 pt-2.5">
                   <button
-                    onClick={() => setEditing(p)}
-                    className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                    aria-label="Editar"
+                    onClick={() => duplicateParticipant(p.id)}
+                    className="btn-ghost flex-1 py-2 text-xs"
                   >
-                    <Pencil size={16} />
+                    <CopyPlus size={14} /> Novo palpite desta pessoa
                   </button>
-                  <ConfirmButton
-                    onConfirm={() => removeParticipant(p.id)}
-                    className="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500"
-                    confirmLabel="X"
-                  >
-                    <Trash2 size={16} />
-                  </ConfirmButton>
+                  {p.pixKey && (
+                    <CopyButton
+                      value={p.pixKey}
+                      label="Pix"
+                      className="btn-ghost py-2 text-xs"
+                    />
+                  )}
                 </div>
               </div>
             )
@@ -226,6 +284,7 @@ function EditModal({
   const [name, setName] = useState('')
   const [color, setColor] = useState('')
   const [value, setValue] = useState('')
+  const [pix, setPix] = useState('')
 
   // sincroniza os campos sempre que um novo participante é aberto
   useEffect(() => {
@@ -233,6 +292,7 @@ function EditModal({
       setName(participant.name)
       setColor(participant.color)
       setValue(participant.betValue != null ? String(participant.betValue) : '')
+      setPix(participant.pixKey ?? '')
     }
   }, [participant])
 
@@ -249,6 +309,21 @@ function EditModal({
             onChange={(e) => setName(e.target.value)}
             autoFocus
           />
+        </div>
+        <div>
+          <label className="label">Chave Pix</label>
+          <div className="relative">
+            <QrCode
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              className="input pl-10"
+              placeholder="CPF, e-mail, telefone ou aleatória"
+              value={pix}
+              onChange={(e) => setPix(e.target.value)}
+            />
+          </div>
         </div>
         <div>
           <label className="label">Valor apostado</label>
@@ -294,6 +369,7 @@ function EditModal({
                 color,
                 betValue:
                   value.trim() === '' ? undefined : Math.max(0, Number(value)),
+                pixKey: pix.trim() ? pix.trim() : undefined,
               })
             }
           >

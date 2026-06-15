@@ -1,8 +1,17 @@
 import { useMemo } from 'react'
-import { Crown, Medal, Target, TrendingUp, Trophy, Users } from 'lucide-react'
+import {
+  Crown,
+  Medal,
+  PartyPopper,
+  QrCode,
+  Target,
+  TrendingUp,
+  Trophy,
+  Users,
+} from 'lucide-react'
 import { useStore } from '../store/store'
 import { computeStandings } from '../store/scoring'
-import { Avatar, EmptyState, SectionTitle } from '../components/ui'
+import { Avatar, CopyButton, EmptyState, SectionTitle } from '../components/ui'
 import { cx, formatMoney, potSummary } from '../utils'
 
 export default function RankingView() {
@@ -42,6 +51,15 @@ export default function RankingView() {
   const rest = standings.slice(3)
   const podiumOrder = [1, 0, 2] // 2º, 1º, 3º para o pódio
 
+  // campeão definido quando todos os jogos terminaram
+  const allFinished =
+    matches.length > 0 && matches.every((m) => m.finished)
+  const champion = standings[0]
+  const championP =
+    champion && champion.points > 0
+      ? participants.find((p) => p.id === champion.participantId)
+      : undefined
+
   return (
     <div className="space-y-5">
       <SectionTitle
@@ -49,6 +67,40 @@ export default function RankingView() {
         title="Ranking"
         subtitle="Classificação geral e premiação"
       />
+
+      {/* Banner do campeão (fim do bolão) */}
+      {allFinished && championP && (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gold-400 via-gold-500 to-amber-600 p-5 text-white shadow-card">
+          <PartyPopper className="absolute -right-3 -top-3 opacity-20" size={90} />
+          <div className="relative flex flex-wrap items-center gap-4">
+            <Avatar name={championP.name} color={championP.color} size={56} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-white/90">
+                <Crown size={16} fill="currentColor" /> Campeão do bolão
+              </div>
+              <div className="truncate text-2xl font-black">
+                {championP.name}
+              </div>
+              <div className="text-sm text-white/90">
+                {champion.points} pts · prêmio{' '}
+                {formatMoney(prizeFor(0), settings.currency)}
+              </div>
+            </div>
+            {championP.pixKey ? (
+              <CopyButton
+                value={championP.pixKey}
+                label="Copiar Pix do vencedor"
+                copiedLabel="Pix copiado!"
+                className="btn w-full justify-center bg-white/95 text-amber-700 hover:bg-white sm:w-auto"
+              />
+            ) : (
+              <span className="rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold">
+                Sem chave Pix — adicione na aba Amigos
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Pódio */}
       {top3.some((r) => r.points > 0) && (
@@ -156,9 +208,23 @@ export default function RankingView() {
                       {p.name}
                     </div>
                     {prize > 0 && (
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-gold-600">
-                        <Medal size={11} />
-                        {formatMoney(prize, settings.currency)}
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-gold-600">
+                          <Medal size={11} />
+                          {formatMoney(prize, settings.currency)}
+                        </span>
+                        {p.pixKey ? (
+                          <CopyButton
+                            value={p.pixKey}
+                            label="Pix"
+                            iconSize={11}
+                            className="inline-flex items-center gap-1 rounded-md bg-gold-100 px-1.5 py-0.5 text-[11px] font-bold text-gold-700 transition hover:bg-gold-200"
+                          />
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+                            <QrCode size={11} /> sem Pix
+                          </span>
+                        )}
                       </div>
                     )}
                     {/* métricas em telas pequenas */}

@@ -51,10 +51,12 @@ interface StoreContextValue {
   // settings
   updateSettings: (patch: Partial<PoolSettings>) => void
   // participants
-  addParticipant: (name: string, betValue?: number) => void
+  addParticipant: (name: string, betValue?: number, pixKey?: string) => void
   updateParticipant: (id: string, patch: Partial<Participant>) => void
   removeParticipant: (id: string) => void
   togglePaid: (id: string) => void
+  /** Cria outro palpite (bilhete) para a mesma pessoa, copiando nome/cor/Pix. */
+  duplicateParticipant: (id: string) => void
   // teams & groups
   setTeams: (teams: Team[]) => void
   setGroups: (groups: Record<string, string[]>) => void
@@ -104,21 +106,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }))
   }, [])
 
-  const addParticipant = useCallback((name: string, betValue?: number) => {
-    const trimmed = name.trim()
-    if (!trimmed) return
+  const addParticipant = useCallback(
+    (name: string, betValue?: number, pixKey?: string) => {
+      const trimmed = name.trim()
+      if (!trimmed) return
+      setState((s) => {
+        const color = AVATAR_COLORS[s.participants.length % AVATAR_COLORS.length]
+        const participant: Participant = {
+          id: uid('p_'),
+          name: trimmed,
+          color,
+          paid: false,
+          betValue:
+            betValue != null && !Number.isNaN(betValue) ? betValue : undefined,
+          pixKey: pixKey?.trim() ? pixKey.trim() : undefined,
+          createdAt: Date.now(),
+        }
+        return { ...s, participants: [...s.participants, participant] }
+      })
+    },
+    [],
+  )
+
+  const duplicateParticipant = useCallback((id: string) => {
     setState((s) => {
-      const color = AVATAR_COLORS[s.participants.length % AVATAR_COLORS.length]
-      const participant: Participant = {
+      const original = s.participants.find((p) => p.id === id)
+      if (!original) return s
+      // nome base sem sufixo " (n)" e próximo número livre
+      const base = original.name.replace(/\s*\(\d+\)\s*$/, '').trim()
+      let n = 2
+      const taken = new Set(s.participants.map((p) => p.name))
+      while (taken.has(`${base} (${n})`)) n++
+      const copy: Participant = {
         id: uid('p_'),
-        name: trimmed,
-        color,
+        name: `${base} (${n})`,
+        color: original.color,
         paid: false,
-        betValue:
-          betValue != null && !Number.isNaN(betValue) ? betValue : undefined,
+        betValue: original.betValue,
+        pixKey: original.pixKey,
         createdAt: Date.now(),
       }
-      return { ...s, participants: [...s.participants, participant] }
+      return { ...s, participants: [...s.participants, copy] }
     })
   }, [])
 
@@ -299,6 +327,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateParticipant,
       removeParticipant,
       togglePaid,
+      duplicateParticipant,
       setTeams,
       setGroups,
       regenerateGroupMatches,
@@ -319,6 +348,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateParticipant,
       removeParticipant,
       togglePaid,
+      duplicateParticipant,
       setTeams,
       setGroups,
       regenerateGroupMatches,

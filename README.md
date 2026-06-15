@@ -11,7 +11,11 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
 - **Painel** com o prêmio total acumulado, próximos jogos e líder do bolão.
 - **Participantes (amigos)**: adicione todo mundo com o **valor que cada um
   aposta** (com um valor padrão para agilizar), marque quem já pagou e acompanhe
-  quanto foi arrecadado e quanto falta receber.
+  quanto foi arrecadado e quanto falta receber. Cada pessoa pode ter **mais de um
+  palpite (bilhete)** e cadastrar a **chave Pix** para receber o prêmio.
+- **Pix do vencedor**: ao fim do bolão aparece o campeão com um botão para
+  **copiar a chave Pix do vencedor**, e as posições premiadas também têm botão de
+  copiar Pix para facilitar o pagamento.
 - **Feito para o celular**: layout responsivo de verdade, com navegação inferior,
   campos que não dão zoom indesejado no iOS e respeito à área segura (notch).
 - **Jogos**: calendário organizado por **grupos e fases** (da fase de grupos até a

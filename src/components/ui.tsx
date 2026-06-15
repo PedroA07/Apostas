@@ -3,8 +3,8 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { X } from 'lucide-react'
-import { cx, initials } from '../utils'
+import { Check, Copy, X } from 'lucide-react'
+import { copyText, cx, initials } from '../utils'
 
 export function SectionTitle({
   icon,
@@ -177,6 +177,42 @@ export function ConfirmButton({
       }}
     >
       {armed ? confirmLabel : children}
+    </button>
+  )
+}
+
+export function CopyButton({
+  value,
+  label = 'Copiar',
+  copiedLabel = 'Copiado!',
+  className = 'btn-gold',
+  iconSize = 15,
+}: {
+  value: string
+  label?: string
+  copiedLabel?: string
+  className?: string
+  iconSize?: number
+}) {
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) return
+    const t = setTimeout(() => setCopied(false), 2000)
+    return () => clearTimeout(t)
+  }, [copied])
+
+  return (
+    <button
+      type="button"
+      className={cx(className, copied && '!bg-pitch-600 !text-white')}
+      onClick={async (e) => {
+        e.stopPropagation()
+        const ok = await copyText(value)
+        if (ok) setCopied(true)
+      }}
+    >
+      {copied ? <Check size={iconSize} /> : <Copy size={iconSize} />}
+      {copied ? copiedLabel : label}
     </button>
   )
 }
