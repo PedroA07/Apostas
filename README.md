@@ -18,6 +18,10 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
   final). Lance os resultados oficiais de cada partida. Os 72 jogos da fase de
   grupos já vêm gerados — e você pode editar tudo ou adicionar os jogos do
   mata-mata.
+- **Brasil** 🇧🇷: uma aba só da Seleção, com o retrospecto (vitórias, empates,
+  derrotas e gols), o grupo, todos os jogos do Brasil (com lançamento de
+  resultado), os palpites de cada um nesses jogos e um **ranking específico dos
+  jogos do Brasil**.
 - **Palpites**: registre o placar que cada um cravou, por pessoa (preenchendo
   todos os jogos de um participante) ou por jogo (comparando o palpite de todos).
 - **Ranking**: classificação automática com pódio, pontos, placares exatos e a

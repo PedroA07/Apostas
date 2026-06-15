@@ -3,6 +3,7 @@ import {
   ClipboardList,
   Home,
   CalendarDays,
+  Flag,
   Settings as SettingsIcon,
   Trophy,
   Users,
@@ -11,22 +12,33 @@ import { useStore } from './store/store'
 import { cx } from './utils'
 import Dashboard from './views/Dashboard'
 import MatchesView from './views/MatchesView'
+import BrasilView from './views/BrasilView'
 import PredictionsView from './views/PredictionsView'
 import RankingView from './views/RankingView'
 import ParticipantsView from './views/ParticipantsView'
 import SettingsView from './views/SettingsView'
 
-type Tab = 'painel' | 'jogos' | 'palpites' | 'ranking' | 'participantes' | 'config'
+type Tab =
+  | 'painel'
+  | 'jogos'
+  | 'brasil'
+  | 'palpites'
+  | 'ranking'
+  | 'participantes'
+  | 'config'
 
 interface NavItem {
   id: Tab
   label: string
   icon: typeof Home
+  /** emoji opcional usado no lugar do ícone (ex: bandeira) */
+  emoji?: string
 }
 
 const NAV: NavItem[] = [
   { id: 'painel', label: 'Painel', icon: Home },
   { id: 'jogos', label: 'Jogos', icon: CalendarDays },
+  { id: 'brasil', label: 'Brasil', icon: Flag, emoji: '🇧🇷' },
   { id: 'palpites', label: 'Palpites', icon: ClipboardList },
   { id: 'ranking', label: 'Ranking', icon: Trophy },
   { id: 'participantes', label: 'Amigos', icon: Users },
@@ -74,6 +86,7 @@ export default function App() {
       <main className="mx-auto max-w-5xl animate-fade-in px-4 py-5">
         {tab === 'painel' && <Dashboard go={(t) => setTab(t as Tab)} />}
         {tab === 'jogos' && <MatchesView />}
+        {tab === 'brasil' && <BrasilView go={(t) => setTab(t as Tab)} />}
         {tab === 'palpites' && <PredictionsView />}
         {tab === 'ranking' && <RankingView />}
         {tab === 'participantes' && <ParticipantsView />}
@@ -104,7 +117,11 @@ export default function App() {
                     active && 'bg-pitch-50',
                   )}
                 >
-                  <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                  {item.emoji ? (
+                    <span className="text-[19px] leading-none">{item.emoji}</span>
+                  ) : (
+                    <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                  )}
                 </span>
                 {item.label}
               </button>
@@ -136,7 +153,11 @@ function NavButton({
           : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700',
       )}
     >
-      <Icon size={17} />
+      {item.emoji ? (
+        <span className="text-base leading-none">{item.emoji}</span>
+      ) : (
+        <Icon size={17} />
+      )}
       {item.label}
     </button>
   )
