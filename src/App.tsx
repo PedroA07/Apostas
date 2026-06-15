@@ -9,6 +9,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useStore } from './store/store'
+import { useAutoSyncTimer, useFootball } from './store/useFootball'
 import { cx } from './utils'
 import Dashboard from './views/Dashboard'
 import MatchesView from './views/MatchesView'
@@ -48,6 +49,10 @@ const NAV: NavItem[] = [
 export default function App() {
   const { state } = useStore()
   const [tab, setTab] = useState<Tab>('painel')
+
+  // sincronização automática de placares (quando ativada nas Configurações)
+  const { syncNow } = useFootball()
+  useAutoSyncTimer(syncNow)
 
   return (
     <div className="min-h-screen pb-20 lg:pb-0">

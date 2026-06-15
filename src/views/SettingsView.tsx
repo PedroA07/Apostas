@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
 import {
   AlertTriangle,
+  CloudDownload,
   Coins,
   Download,
   Goal,
+  RefreshCw,
   RotateCcw,
   Save,
   Settings as SettingsIcon,
@@ -11,8 +13,10 @@ import {
   Trophy,
   Upload,
   Users2,
+  Zap,
 } from 'lucide-react'
 import { useStore } from '../store/store'
+import { useFootball } from '../store/useFootball'
 import { ConfirmButton, SectionTitle } from '../components/ui'
 import { GROUP_LETTERS } from '../data/teams'
 import { cx } from '../utils'
@@ -45,6 +49,8 @@ export default function SettingsView() {
         split={settings.prizeSplit}
         onSave={(prizeSplit) => updateSettings({ prizeSplit })}
       />
+
+      <AutoUpdateSection />
 
       <GroupsSection />
 
@@ -255,6 +261,129 @@ function PrizeSection({
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+function AutoUpdateSection() {
+  const { state, setAutoUpdate } = useStore()
+  const au = state.settings.autoUpdate
+  const { syncNow, importNow, busy, message } = useFootball()
+
+  const lastSyncText = au.lastSync
+    ? new Date(au.lastSync).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
+
+  return (
+    <div className="card p-5">
+      <h3 className="mb-1 flex items-center gap-2 font-bold text-slate-900">
+        <Zap size={18} className="text-gold-500" /> Placares automáticos
+      </h3>
+      <p className="mb-4 text-sm text-slate-500">
+        Busca os resultados reais da Copa em uma API de futebol e atualiza os
+        placares sozinho. Requer publicar na Vercel com a chave da API
+        configurada (veja o README).
+      </p>
+
+      {/* Liga/desliga */}
+      <div className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
+        <div className="min-w-0">
+          <div className="font-semibold text-slate-800">
+            Atualização automática
+          </div>
+          <div className="text-xs text-slate-400">
+            Sincroniza a cada {au.intervalMin} min enquanto o app estiver aberto.
+          </div>
+        </div>
+        <button
+          role="switch"
+          aria-checked={au.enabled}
+          onClick={() => setAutoUpdate({ enabled: !au.enabled })}
+          className={cx(
+            'relative h-7 w-12 shrink-0 rounded-full transition',
+            au.enabled ? 'bg-pitch-500' : 'bg-slate-300',
+          )}
+        >
+          <span
+            className={cx(
+              'absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all',
+              au.enabled ? 'left-6' : 'left-1',
+            )}
+          />
+        </button>
+      </div>
+
+      {/* Intervalo */}
+      <div className="mt-3 flex items-center gap-3">
+        <label className="text-sm font-semibold text-slate-600">
+          Intervalo
+        </label>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={120}
+          className="input w-24 text-center"
+          value={au.intervalMin}
+          onChange={(e) =>
+            setAutoUpdate({
+              intervalMin: Math.max(1, Math.min(120, Number(e.target.value) || 1)),
+            })
+          }
+        />
+        <span className="text-sm text-slate-400">minutos</span>
+      </div>
+
+      {/* Ações */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          className="btn-primary"
+          onClick={syncNow}
+          disabled={busy !== null}
+        >
+          <RefreshCw size={16} className={busy === 'sync' ? 'animate-spin' : ''} />
+          {busy === 'sync' ? 'Sincronizando…' : 'Sincronizar agora'}
+        </button>
+        <ConfirmButton
+          onConfirm={importNow}
+          className="btn-ghost"
+          confirmLabel="Importar e substituir a tabela?"
+        >
+          <CloudDownload size={16} />
+          {busy === 'import' ? 'Importando…' : 'Importar tabela real da Copa'}
+        </ConfirmButton>
+      </div>
+
+      {lastSyncText && (
+        <p className="mt-3 text-xs text-slate-400">
+          Última sincronização: {lastSyncText}
+          {au.lastStatus === 'ok'
+            ? ` · ${au.lastCount ?? 0} jogo(s) atualizado(s)`
+            : ` · ${au.lastStatus}`}
+        </p>
+      )}
+
+      {message && (
+        <div
+          className={cx(
+            'mt-3 rounded-lg px-3 py-2 text-sm font-semibold',
+            message.ok ? 'bg-pitch-50 text-pitch-700' : 'bg-amber-50 text-amber-700',
+          )}
+        >
+          {message.text}
+        </div>
+      )}
+
+      <p className="mt-3 text-xs text-slate-400">
+        ⚠️ "Importar tabela real" substitui os jogos atuais pelos oficiais da API
+        (os palpites são remapeados pelos jogos correspondentes). Faça isso antes
+        de todos palpitarem.
+      </p>
     </div>
   )
 }

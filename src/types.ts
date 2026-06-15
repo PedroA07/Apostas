@@ -39,6 +39,8 @@ export interface Match {
   awayScore: number | null
   /** Jogo encerrado (resultado oficial lançado) */
   finished: boolean
+  /** ID do jogo na API de futebol (usado para atualização automática do placar) */
+  externalId?: number
 }
 
 export interface Participant {
@@ -79,6 +81,19 @@ export interface PrizeSplit {
   third: number
 }
 
+export interface AutoUpdateSettings {
+  /** Buscar placares reais automaticamente */
+  enabled: boolean
+  /** Intervalo entre sincronizações (minutos) */
+  intervalMin: number
+  /** Timestamp da última sincronização */
+  lastSync?: number
+  /** Status da última tentativa (ex: "ok", "sem chave", "erro") */
+  lastStatus?: string
+  /** Quantos jogos foram atualizados na última sincronização */
+  lastCount?: number
+}
+
 export interface PoolSettings {
   /** Nome do bolão */
   name: string
@@ -89,6 +104,8 @@ export interface PoolSettings {
   scoring: ScoringRules
   /** Divisão do prêmio em % (deve somar 100) */
   prizeSplit: PrizeSplit
+  /** Atualização automática de placares via API de futebol */
+  autoUpdate: AutoUpdateSettings
 }
 
 export interface AppState {

@@ -16,6 +16,9 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
 - **Pix do vencedor**: ao fim do bolão aparece o campeão com um botão para
   **copiar a chave Pix do vencedor**, e as posições premiadas também têm botão de
   copiar Pix para facilitar o pagamento.
+- **Placares automáticos** (opcional): busca os resultados reais da Copa em uma
+  API de futebol e **atualiza os placares sozinho**, recalculando ranking e
+  prêmios. Veja a configuração abaixo.
 - **Feito para o celular**: layout responsivo de verdade, com navegação inferior,
   campos que não dão zoom indesejado no iOS e respeito à área segura (notch).
 - **Jogos**: calendário organizado por **grupos e fases** (da fase de grupos até a
@@ -98,6 +101,32 @@ vercel --prod   # publicar em produção
 > é **uma pessoa ser a organizadora** e lançar os palpites/resultados (usando o
 > *Exportar/Importar backup* para guardar), **ou** evoluir o app para um banco de
 > dados online (ex: Supabase) com sincronização em tempo real.
+
+## ⚡ Placares automáticos (API de futebol)
+
+Para os placares atualizarem sozinhos com os resultados reais da Copa:
+
+1. Crie uma **chave grátis** em
+   [football-data.org/client/register](https://www.football-data.org/client/register).
+2. No painel da Vercel, em **Settings → Environment Variables**, adicione:
+   - `FOOTBALL_DATA_API_KEY` = a sua chave
+   - `FOOTBALL_DATA_COMPETITION` = `WC` (opcional; padrão já é a Copa do Mundo)
+3. Faça um novo deploy (a Vercel reimplanta sozinha a cada push).
+4. No app, vá em **Configurações → Placares automáticos**:
+   - Clique em **Importar tabela real da Copa** (uma vez) para trazer os jogos
+     oficiais — isso substitui a tabela de exemplo e já casa cada jogo com a API.
+   - Ligue a **Atualização automática** e escolha o intervalo. Pronto: enquanto o
+     app estiver aberto, os placares finalizados entram sozinhos e o ranking e os
+     prêmios se atualizam.
+
+**Como funciona por baixo:** o app nunca fala direto com a API. Ele chama a
+função serverless `api/scores.ts` (na Vercel), que guarda a chave **somente no
+servidor** e devolve os jogos já normalizados — resolvendo segurança da chave e
+CORS de uma vez. Sem a chave configurada, o app continua funcionando no modo
+manual normalmente.
+
+> 💡 Em desenvolvimento local, a função `/api/scores` só roda com
+> `vercel dev` (o `npm run dev` comum não executa as funções serverless).
 
 ## 📲 Como usar com os amigos
 

@@ -27,16 +27,29 @@ import {
 
 const STORAGE_KEY = 'bolao-copa-2026'
 
+/** Garante que todos os campos (inclusive os novos) existam, mesclando com os padrões. */
+function normalizeState(parsed: Partial<AppState>): AppState {
+  const base = createInitialState()
+  const settings = parsed.settings ?? base.settings
+  return {
+    ...base,
+    ...parsed,
+    settings: {
+      ...base.settings,
+      ...settings,
+      scoring: { ...base.settings.scoring, ...settings.scoring },
+      prizeSplit: { ...base.settings.prizeSplit, ...settings.prizeSplit },
+      autoUpdate: { ...base.settings.autoUpdate, ...settings.autoUpdate },
+    },
+    version: SCHEMA_VERSION,
+  }
+}
+
 function loadState(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return createInitialState()
-    const parsed = JSON.parse(raw) as AppState
-    if (!parsed.version || parsed.version !== SCHEMA_VERSION) {
-      // versão diferente -> mescla com base atual para evitar quebras
-      return { ...createInitialState(), ...parsed, version: SCHEMA_VERSION }
-    }
-    return parsed
+    return normalizeState(JSON.parse(raw) as Partial<AppState>)
   } catch {
     return createInitialState()
   }
@@ -50,6 +63,14 @@ interface StoreContextValue {
   state: AppState
   // settings
   updateSettings: (patch: Partial<PoolSettings>) => void
+  setAutoUpdate: (patch: Partial<AppState['settings']['autoUpdate']>) => void
+  // integração com a API de futebol
+  importSchedule: (data: {
+    teams: Team[]
+    groups: Record<string, string[]>
+    matches: Match[]
+  }) => void
+  setMatches: (matches: Match[]) => void
   // participants
   addParticipant: (name: string, betValue?: number, pixKey?: string) => void
   updateParticipant: (id: string, patch: Partial<Participant>) => void
@@ -104,6 +125,63 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const updateSettings = useCallback((patch: Partial<PoolSettings>) => {
     setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }))
+  }, [])
+
+  const setAutoUpdate = useCallback(
+    (patch: Partial<AppState['settings']['autoUpdate']>) => {
+      setState((s) => ({
+        ...s,
+        settings: {
+          ...s.settings,
+          autoUpdate: { ...s.settings.autoUpdate, ...patch },
+        },
+      }))
+    },
+    [],
+  )
+
+  const importSchedule = useCallback(
+    (data: {
+      teams: Team[]
+      groups: Record<string, string[]>
+      matches: Match[]
+    }) => {
+      setState((s) => {
+        // mantém apenas palpites de jogos que ainda existem (por externalId)
+        const validExternal = new Set(
+          data.matches.map((m) => m.externalId).filter((x) => x != null),
+        )
+        const oldById = new Map(s.matches.map((m) => [m.id, m]))
+        const predictions: Record<string, Prediction> = {}
+        for (const pred of Object.values(s.predictions)) {
+          const old = oldById.get(pred.matchId)
+          if (old?.externalId != null && validExternal.has(old.externalId)) {
+            // re-mapeia o palpite para o novo id do mesmo jogo
+            const novo = data.matches.find(
+              (m) => m.externalId === old.externalId,
+            )
+            if (novo) {
+              predictions[`${pred.participantId}:${novo.id}`] = {
+                ...pred,
+                matchId: novo.id,
+              }
+            }
+          }
+        }
+        return {
+          ...s,
+          teams: data.teams,
+          groups: data.groups,
+          matches: data.matches,
+          predictions,
+        }
+      })
+    },
+    [],
+  )
+
+  const setMatches = useCallback((matches: Match[]) => {
+    setState((s) => ({ ...s, matches }))
   }, [])
 
   const addParticipant = useCallback(
@@ -306,9 +384,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const importData = useCallback((json: string): boolean => {
     try {
-      const parsed = JSON.parse(json) as AppState
+      const parsed = JSON.parse(json) as Partial<AppState>
       if (!parsed.matches || !parsed.settings) return false
-      setState({ ...createInitialState(), ...parsed, version: SCHEMA_VERSION })
+      setState(normalizeState(parsed))
       return true
     } catch {
       return false
@@ -323,6 +401,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       updateSettings,
+      setAutoUpdate,
+      importSchedule,
+      setMatches,
       addParticipant,
       updateParticipant,
       removeParticipant,
@@ -344,6 +425,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       state,
       updateSettings,
+      setAutoUpdate,
+      importSchedule,
+      setMatches,
       addParticipant,
       updateParticipant,
       removeParticipant,
