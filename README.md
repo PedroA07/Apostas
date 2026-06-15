@@ -59,6 +59,35 @@ npm run build
 npm run preview
 ```
 
+## ▲ Publicar na Vercel
+
+O projeto já vem pronto para a Vercel (há um `vercel.json` configurado).
+
+**Pelo site (mais fácil):**
+
+1. Acesse [vercel.com](https://vercel.com) e faça login com o GitHub.
+2. Clique em **Add New… → Project** e importe o repositório `pedroa07/apostas`.
+3. A Vercel detecta o Vite sozinho (Build: `npm run build`, Output: `dist`).
+   É só clicar em **Deploy**.
+4. Em segundos você recebe um link público (ex: `seu-bolao.vercel.app`) para
+   mandar no grupo dos amigos. 🎉
+
+**Pelo terminal (CLI):**
+
+```bash
+npm i -g vercel
+vercel          # primeira publicação (responda às perguntas)
+vercel --prod   # publicar em produção
+```
+
+> ⚠️ **Importante sobre os dados:** publicar na Vercel deixa o app *acessível*
+> por um link, mas **os dados continuam salvos no navegador de cada pessoa**
+> (não há servidor compartilhado). Ou seja, o link é o mesmo, mas cada um vê o
+> seu próprio bolão. Para um bolão de verdade compartilhado entre todos, o ideal
+> é **uma pessoa ser a organizadora** e lançar os palpites/resultados (usando o
+> *Exportar/Importar backup* para guardar), **ou** evoluir o app para um banco de
+> dados online (ex: Supabase) com sincronização em tempo real.
+
 ## 📲 Como usar com os amigos
 
 1. Em **Configurações**, ajuste o nome do bolão, o **valor da aposta** e a
