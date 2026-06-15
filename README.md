@@ -31,7 +31,8 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
   jogos do Brasil**.
 - **Palpites**: registre os placares, por pessoa ou por jogo. Cada apostador pode
   dar **quantos palpites quiser para o mesmo jogo** — vale o **melhor** deles na
-  pontuação.
+  pontuação. No modo "por jogo" há um **seletor com busca** (por time, fase, grupo
+  ou estádio) e **bandeiras** para achar a partida rapidinho.
 - **Ranking**: classificação automática com pódio, pontos, placares exatos e a
   divisão do prêmio em dinheiro. **Trata empates**: quem empata divide a mesma
   posição, e se houver empate na liderança todos aparecem como campeões com o

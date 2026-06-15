@@ -12,6 +12,7 @@ import {
 import { useStore, STAGE_LABELS, STAGE_ORDER } from '../store/store'
 import { Avatar, EmptyState, SectionTitle } from '../components/ui'
 import { TeamPill } from '../components/TeamPill'
+import { MatchSelect } from '../components/MatchSelect'
 import { bestScore, scorePrediction, type HitType } from '../store/scoring'
 import { cx, getTeam, formatDateTime, teamMap } from '../utils'
 import type { Match, Prediction, ScoringRules, Stage } from '../types'
@@ -256,23 +257,12 @@ function ByMatch() {
     <div className="space-y-4">
       <div className="card p-3">
         <label className="label px-1">Escolha o jogo</label>
-        <select
-          className="input"
+        <MatchSelect
+          matches={sortedMatches}
           value={match.id}
-          onChange={(e) => setMid(e.target.value)}
-        >
-          {sortedMatches.map((m) => {
-            const mh = getTeam(tmap, m.homeCode, m.homeLabel)
-            const ma = getTeam(tmap, m.awayCode, m.awayLabel)
-            return (
-              <option key={m.id} value={m.id}>
-                {mh.flag} {mh.name} × {ma.name} {ma.flag} —{' '}
-                {STAGE_LABELS[m.stage]}
-                {m.group ? ` ${m.group}` : ''}
-              </option>
-            )
-          })}
-        </select>
+          onChange={setMid}
+          tmap={tmap}
+        />
       </div>
 
       {/* Cartão do jogo */}

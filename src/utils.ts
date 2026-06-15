@@ -119,6 +119,15 @@ export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ')
 }
 
+/** Normaliza texto para busca: minúsculas, sem acentos e sem pontuação. */
+export function normalizeText(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[^\p{L}\p{N} ]/gu, '')
+    .toLowerCase()
+    .trim()
+}
+
 /** Copia um texto para a área de transferência (com fallback para navegadores antigos). */
 export async function copyText(text: string): Promise<boolean> {
   try {
