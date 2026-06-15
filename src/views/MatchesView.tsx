@@ -13,6 +13,7 @@ import { useStore, STAGE_LABELS, STAGE_ORDER } from '../store/store'
 import { ConfirmButton, EmptyState, Modal, SectionTitle } from '../components/ui'
 import { TeamPill } from '../components/TeamPill'
 import { Select } from '../components/Select'
+import { useBet } from '../components/BetModal'
 import { VENUES } from '../data/venues'
 import {
   cx,
@@ -67,7 +68,7 @@ export default function MatchesView() {
       <SectionTitle
         icon={<CalendarClock size={20} />}
         title="Jogos"
-        subtitle="Calendário da Copa e lançamento dos resultados oficiais"
+        subtitle="Toque em um jogo para palpitar. Os placares são o resultado oficial."
         action={
           <button className="btn-primary" onClick={() => setEditing('new')}>
             <Plus size={16} /> <span className="hidden sm:inline">Novo jogo</span>
@@ -216,6 +217,7 @@ function MatchCard({
   onDelete: () => void
   showStage?: boolean
 }) {
+  const { openBet } = useBet()
   const home = getTeam(tmap, match.homeCode, match.homeLabel)
   const away = getTeam(tmap, match.awayCode, match.awayLabel)
 
@@ -227,8 +229,15 @@ function MatchCard({
 
   return (
     <div
+      onClick={() => openBet(match.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') openBet(match.id)
+      }}
+      title="Palpitar neste jogo"
       className={cx(
-        'card group p-3 transition hover:shadow-card-hover sm:p-4',
+        'card group cursor-pointer p-3 transition hover:shadow-card-hover hover:ring-1 hover:ring-pitch-200 sm:p-4',
         match.finished && 'ring-1 ring-pitch-200',
       )}
     >
@@ -250,7 +259,10 @@ function MatchCard({
             </span>
           )}
         </span>
-        <div className="flex items-center gap-0.5 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100">
+        <div
+          className="flex items-center gap-0.5 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             onClick={onEdit}
             className="grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600"
@@ -270,7 +282,10 @@ function MatchCard({
 
       <div className="flex items-center gap-2 sm:gap-3">
         <TeamPill team={home} align="right" className="flex-1" strong />
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div
+          className="flex shrink-0 items-center gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <ScoreBox
             value={match.homeScore}
             onChange={(v) => onScore('home', v)}

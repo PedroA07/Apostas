@@ -36,6 +36,12 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
 - **Seletores personalizados**: nenhum menu padrão do navegador. Todo seletor de
   seleção (criar jogo, montar grupos) é um **combobox com busca e a bandeira ao
   lado do nome de cada país**.
+- **Bandeiras de verdade (imagem)**: as bandeiras aparecem como imagem (via
+  flagcdn), então funcionam em qualquer sistema — inclusive Windows, que não
+  desenha emoji de bandeira.
+- **Palpitar em 1 toque**: clique em **qualquer jogo, em qualquer aba** (Painel,
+  Jogos, Brasil) e abre um modal para registrar os palpites de todos naquele
+  jogo, sem sair da tela.
 - **Ranking**: classificação automática com pódio, pontos, placares exatos e a
   divisão do prêmio em dinheiro. **Trata empates**: quem empata divide a mesma
   posição, e se houver empate na liderança todos aparecem como campeões com o

@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react'
 import { cx, normalizeText } from '../utils'
+import { Flag } from './Flag'
 
 export interface SelectOption {
   value: string
@@ -140,7 +141,7 @@ export function Select({
         {selected ? (
           <span className="flex min-w-0 items-center gap-2">
             {selected.flag && (
-              <span className="shrink-0 text-lg leading-none">{selected.flag}</span>
+              <Flag emoji={selected.flag} name={selected.label} size={18} />
             )}
             <span className="truncate font-medium text-slate-800">
               {selected.label}
@@ -202,10 +203,8 @@ export function Select({
                     i === active ? 'bg-pitch-50' : 'hover:bg-slate-50',
                   )}
                 >
-                  {o.flag !== undefined && (
-                    <span className="w-6 shrink-0 text-center text-xl leading-none">
-                      {o.flag}
-                    </span>
+                  {o.flag && (
+                    <Flag emoji={o.flag} name={o.label} size={16} />
                   )}
                   <span className="min-w-0 flex-1">
                     <span

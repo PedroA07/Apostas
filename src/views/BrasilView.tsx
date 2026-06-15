@@ -9,9 +9,12 @@ import {
   Trophy,
 } from 'lucide-react'
 import { useStore, STAGE_LABELS } from '../store/store'
-import { bestScore, computeStandings, type HitType } from '../store/scoring'
+import { bestScore, computeStandings } from '../store/scoring'
 import { Avatar, EmptyState, SectionTitle } from '../components/ui'
 import { TeamPill } from '../components/TeamPill'
+import { Flag as CountryFlag } from '../components/Flag'
+import { hitChip } from '../components/PalpiteList'
+import { useBet } from '../components/BetModal'
 import { cx, formatDateTime, getTeam, teamMap } from '../utils'
 import type { Match, Participant, Prediction, Team } from '../types'
 
@@ -80,12 +83,18 @@ export default function BrasilView({ go }: { go: (tab: string) => void }) {
     <div className="space-y-5">
       {/* Hero verde-amarelo */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pitch-600 via-pitch-500 to-gold-400 p-5 text-white shadow-card sm:p-6">
-        <div className="absolute -right-6 -top-6 text-[120px] leading-none opacity-15">
-          {brazil.flag}
+        <div className="absolute -right-6 -top-6 opacity-15">
+          <CountryFlag
+            emoji={brazil.flag}
+            name={brazil.name}
+            size={120}
+            className="ring-0"
+          />
         </div>
         <div className="relative">
           <div className="flex items-center gap-2 text-sm font-semibold text-white/90">
-            <span className="text-2xl">{brazil.flag}</span> Seleção Brasileira
+            <CountryFlag emoji={brazil.flag} name={brazil.name} size={22} /> Seleção
+            Brasileira
           </div>
           <h2 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
             Brasil na Copa 2026
@@ -238,6 +247,7 @@ function BrazilMatchCard({
   rules: { exact: number; result: number; goals: number }
   onResult: (id: string, home: number | null, away: number | null) => void
 }) {
+  const { openBet } = useBet()
   const home = getTeam(tmap, match.homeCode, match.homeLabel)
   const away = getTeam(tmap, match.awayCode, match.awayLabel)
   const brazilIsHome = match.homeCode === code
@@ -259,11 +269,19 @@ function BrazilMatchCard({
 
   return (
     <div
+      onClick={() => openBet(match.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') openBet(match.id)
+      }}
+      title="Palpitar neste jogo"
       className={cx(
-        'card p-3 sm:p-4',
+        'card cursor-pointer p-3 transition hover:shadow-card-hover sm:p-4',
         outcome === 'win' && 'ring-1 ring-pitch-300',
         outcome === 'loss' && 'ring-1 ring-red-200',
         outcome === 'draw' && 'ring-1 ring-slate-200',
+        !outcome && 'hover:ring-1 hover:ring-pitch-200',
       )}
     >
       <div className="mb-2 flex items-center justify-between text-[11px] font-medium text-slate-400">
@@ -278,7 +296,10 @@ function BrazilMatchCard({
 
       <div className="flex items-center gap-2 sm:gap-3">
         <TeamPill team={home} align="right" className="flex-1" strong />
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div
+          className="flex shrink-0 items-center gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <ScoreBox value={match.homeScore} onChange={(v) => onScore('home', v)} />
           <span className="text-sm font-bold text-slate-300">×</span>
           <ScoreBox value={match.awayScore} onChange={(v) => onScore('away', v)} />
@@ -397,17 +418,4 @@ function computeRecord(matches: Match[], code: string) {
     else losses++
   }
   return { wins, draws, losses, gf, ga }
-}
-
-function hitChip(type: HitType): string {
-  switch (type) {
-    case 'exact':
-      return 'bg-pitch-100 text-pitch-700'
-    case 'result':
-      return 'bg-blue-100 text-blue-700'
-    case 'goals':
-      return 'bg-gold-100 text-gold-700'
-    default:
-      return 'bg-slate-100 text-slate-400'
-  }
 }

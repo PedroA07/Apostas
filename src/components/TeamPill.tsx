@@ -1,5 +1,6 @@
 import { cx } from '../utils'
 import type { Team } from '../types'
+import { Flag } from './Flag'
 
 export function TeamPill({
   team,
@@ -20,7 +21,7 @@ export function TeamPill({
         className,
       )}
     >
-      <span className="text-2xl leading-none">{team.flag}</span>
+      <Flag emoji={team.flag} name={team.name} size={22} />
       <span
         className={cx(
           'truncate',

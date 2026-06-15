@@ -16,6 +16,7 @@ import {
 import type { Match, Team } from '../types'
 import { STAGE_LABELS } from '../store/store'
 import { cx, formatDateTime, getTeam, normalizeText } from '../utils'
+import { Flag } from './Flag'
 
 /**
  * Seletor de jogo com busca personalizada e bandeiras dos países.
@@ -198,10 +199,10 @@ function TeamsLine({
   const a = getTeam(tmap, match.awayCode, match.awayLabel)
   return (
     <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold text-slate-800">
-      <span className="text-lg leading-none">{h.flag}</span>
+      <Flag emoji={h.flag} name={h.name} size={16} />
       <span className="truncate">{h.name}</span>
       <span className="shrink-0 text-slate-300">×</span>
-      <span className="text-lg leading-none">{a.flag}</span>
+      <Flag emoji={a.flag} name={a.name} size={16} />
       <span className="truncate">{a.name}</span>
     </span>
   )
@@ -226,7 +227,7 @@ function Option({
             <span className="truncate text-sm font-semibold text-slate-800">
               {h.name}
             </span>
-            <span className="text-xl leading-none">{h.flag}</span>
+            <Flag emoji={h.flag} name={h.name} size={18} />
           </div>
           {match.finished ? (
             <span className="shrink-0 rounded bg-slate-900 px-1.5 py-0.5 text-xs font-bold text-white">
@@ -236,7 +237,7 @@ function Option({
             <span className="shrink-0 text-xs font-bold text-slate-300">×</span>
           )}
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <span className="text-xl leading-none">{a.flag}</span>
+            <Flag emoji={a.flag} name={a.name} size={18} />
             <span className="truncate text-sm font-semibold text-slate-800">
               {a.name}
             </span>

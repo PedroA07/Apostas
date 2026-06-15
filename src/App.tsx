@@ -11,6 +11,7 @@ import {
 import { useStore } from './store/store'
 import { useAutoSyncTimer, useFootball } from './store/useFootball'
 import { cx } from './utils'
+import { Flag as CountryFlag } from './components/Flag'
 import Dashboard from './views/Dashboard'
 import MatchesView from './views/MatchesView'
 import BrasilView from './views/BrasilView'
@@ -123,7 +124,7 @@ export default function App() {
                   )}
                 >
                   {item.emoji ? (
-                    <span className="text-[19px] leading-none">{item.emoji}</span>
+                    <CountryFlag emoji={item.emoji} name={item.label} size={18} />
                   ) : (
                     <Icon size={20} strokeWidth={active ? 2.5 : 2} />
                   )}
@@ -159,7 +160,7 @@ function NavButton({
       )}
     >
       {item.emoji ? (
-        <span className="text-base leading-none">{item.emoji}</span>
+        <CountryFlag emoji={item.emoji} name={item.label} size={16} />
       ) : (
         <Icon size={17} />
       )}

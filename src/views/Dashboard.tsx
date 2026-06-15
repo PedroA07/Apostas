@@ -11,6 +11,8 @@ import {
 import { useStore } from '../store/store'
 import { computeStandings } from '../store/scoring'
 import { Avatar, StatCard } from '../components/ui'
+import { Flag } from '../components/Flag'
+import { useBet } from '../components/BetModal'
 import {
   cx,
   formatDateTime,
@@ -238,21 +240,26 @@ function UpcomingRow({
   match: Match
   tmap: ReturnType<typeof teamMap>
 }) {
+  const { openBet } = useBet()
   const home = getTeam(tmap, match.homeCode, match.homeLabel)
   const away = getTeam(tmap, match.awayCode, match.awayLabel)
   return (
-    <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5">
+    <button
+      type="button"
+      onClick={() => openBet(match.id)}
+      title="Palpitar neste jogo"
+      className="flex w-full items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-left transition hover:bg-pitch-50 hover:ring-1 hover:ring-pitch-200">
       <div className="flex flex-1 items-center justify-end gap-2 text-right">
         <span className="truncate text-sm font-semibold text-slate-700">
           {home.name}
         </span>
-        <span className="text-xl">{home.flag}</span>
+        <Flag emoji={home.flag} name={home.name} size={18} />
       </div>
       <span className="shrink-0 rounded-lg bg-white px-2 py-0.5 text-xs font-bold text-slate-400">
         ×
       </span>
       <div className="flex flex-1 items-center gap-2">
-        <span className="text-xl">{away.flag}</span>
+        <Flag emoji={away.flag} name={away.name} size={18} />
         <span className="truncate text-sm font-semibold text-slate-700">
           {away.name}
         </span>
@@ -260,6 +267,6 @@ function UpcomingRow({
       <div className="ml-1 hidden shrink-0 text-right text-[11px] leading-tight text-slate-400 sm:block">
         {formatDateTime(match.kickoff)}
       </div>
-    </div>
+    </button>
   )
 }
