@@ -3,7 +3,6 @@ import {
   Banknote,
   Check,
   CircleDollarSign,
-  CopyPlus,
   Pencil,
   QrCode,
   Trash2,
@@ -30,7 +29,6 @@ export default function ParticipantsView() {
     updateParticipant,
     removeParticipant,
     togglePaid,
-    duplicateParticipant,
   } = useStore()
   const { participants, settings } = state
   const [name, setName] = useState('')
@@ -54,7 +52,7 @@ export default function ParticipantsView() {
       <SectionTitle
         icon={<Users size={20} />}
         title="Participantes"
-        subtitle="Cada pessoa pode ter mais de um palpite. Informe a chave Pix para receber o prêmio."
+        subtitle="Quem está no bolão, o valor de cada um, a chave Pix e quem já pagou"
       />
 
       {/* Resumo financeiro */}
@@ -127,10 +125,9 @@ export default function ParticipantsView() {
         </div>
         <p className="px-0.5 text-xs text-slate-400">
           Valor em branco = padrão do bolão (
-          {formatMoney(settings.buyIn, settings.currency)}). Para um segundo
-          palpite da mesma pessoa, use{' '}
-          <span className="font-semibold text-slate-500">Novo palpite</span> no
-          cartão dela.
+          {formatMoney(settings.buyIn, settings.currency)}). Cada um pode dar
+          vários palpites por jogo na aba{' '}
+          <span className="font-semibold text-slate-500">Palpites</span>.
         </p>
       </div>
 
@@ -201,21 +198,18 @@ export default function ParticipantsView() {
                     </ConfirmButton>
                   </div>
                 </div>
-                <div className="mt-2.5 flex items-center gap-2 border-t border-slate-100 pt-2.5">
-                  <button
-                    onClick={() => duplicateParticipant(p.id)}
-                    className="btn-ghost flex-1 py-2 text-xs"
-                  >
-                    <CopyPlus size={14} /> Novo palpite desta pessoa
-                  </button>
-                  {p.pixKey && (
+                {p.pixKey && (
+                  <div className="mt-2.5 flex items-center gap-2 border-t border-slate-100 pt-2.5">
+                    <span className="flex-1 truncate text-xs text-slate-400">
+                      Chave Pix cadastrada
+                    </span>
                     <CopyButton
                       value={p.pixKey}
-                      label="Pix"
+                      label="Copiar Pix"
                       className="btn-ghost py-2 text-xs"
                     />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )
           })}

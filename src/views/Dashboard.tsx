@@ -189,7 +189,7 @@ export default function Dashboard({ go }: { go: (tab: string) => void }) {
             </div>
           ) : (
             <div className="space-y-1.5">
-              {standings.slice(0, 5).map((row, i) => {
+              {standings.slice(0, 5).map((row) => {
                 const p = participants.find(
                   (pp) => pp.id === row.participantId,
                 )!
@@ -201,16 +201,16 @@ export default function Dashboard({ go }: { go: (tab: string) => void }) {
                     <span
                       className={cx(
                         'grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold',
-                        i === 0
+                        row.position === 1
                           ? 'bg-gold-100 text-gold-700'
-                          : i === 1
+                          : row.position === 2
                             ? 'bg-slate-200 text-slate-600'
-                            : i === 2
+                            : row.position === 3
                               ? 'bg-orange-100 text-orange-700'
                               : 'bg-slate-100 text-slate-400',
                       )}
                     >
-                      {i + 1}
+                      {row.position}
                     </span>
                     <Avatar name={p.name} color={p.color} size={28} />
                     <span className="flex-1 truncate text-sm font-semibold text-slate-700">

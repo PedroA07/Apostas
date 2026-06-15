@@ -9,7 +9,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import { useStore, STAGE_LABELS } from '../store/store'
-import { computeStandings, scorePrediction, type HitType } from '../store/scoring'
+import { bestScore, computeStandings, type HitType } from '../store/scoring'
 import { Avatar, EmptyState, SectionTitle } from '../components/ui'
 import { TeamPill } from '../components/TeamPill'
 import { cx, formatDateTime, getTeam, teamMap } from '../utils'
@@ -234,7 +234,7 @@ function BrazilMatchCard({
   code: string
   tmap: ReturnType<typeof teamMap>
   participants: Participant[]
-  predictions: Record<string, Prediction>
+  predictions: Record<string, Prediction[]>
   rules: { exact: number; result: number; goals: number }
   onResult: (id: string, home: number | null, away: number | null) => void
 }) {
@@ -318,10 +318,14 @@ function BrazilMatchCard({
           </div>
           <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
             {participants.map((p) => {
-              const pred = predictions[`${p.id}:${match.id}`]
+              const list = predictions[`${p.id}:${match.id}`] ?? []
               const scored = match.finished
-                ? scorePrediction(pred, match, rules)
+                ? bestScore(list, match, rules)
                 : null
+              const palpitesText =
+                list.length > 0
+                  ? list.map((pr) => `${pr.homeScore}×${pr.awayScore}`).join(', ')
+                  : '—'
               return (
                 <div
                   key={p.id}
@@ -331,8 +335,8 @@ function BrazilMatchCard({
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-600">
                     {p.name}
                   </span>
-                  <span className="shrink-0 text-xs font-bold text-slate-800">
-                    {pred ? `${pred.homeScore}×${pred.awayScore}` : '—'}
+                  <span className="shrink-0 truncate text-xs font-bold text-slate-800" title={palpitesText}>
+                    {palpitesText}
                   </span>
                   {scored && scored.type !== 'pending' && (
                     <span

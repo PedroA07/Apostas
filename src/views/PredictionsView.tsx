@@ -3,16 +3,18 @@ import {
   CheckCircle2,
   ClipboardList,
   Lock,
+  Plus,
   Sparkles,
+  Trash2,
   UserCog,
   Users,
 } from 'lucide-react'
 import { useStore, STAGE_LABELS, STAGE_ORDER } from '../store/store'
 import { Avatar, EmptyState, SectionTitle } from '../components/ui'
 import { TeamPill } from '../components/TeamPill'
-import { scorePrediction, type HitType } from '../store/scoring'
+import { bestScore, scorePrediction, type HitType } from '../store/scoring'
 import { cx, getTeam, formatDateTime, teamMap } from '../utils'
-import type { Match, Stage } from '../types'
+import type { Match, Prediction, ScoringRules, Stage } from '../types'
 
 export default function PredictionsView() {
   const { state } = useStore()
@@ -58,7 +60,7 @@ export default function PredictionsView() {
       <SectionTitle
         icon={<ClipboardList size={20} />}
         title="Palpites"
-        subtitle="Registre o placar que cada um cravou"
+        subtitle="Cada um pode dar quantos palpites quiser por jogo — vale o melhor"
         action={
           <div className="flex rounded-xl border border-slate-200 bg-white p-0.5">
             <ModeBtn
@@ -112,22 +114,21 @@ function ModeBtn({
 // ===== Modo: por participante =====
 
 function ByParticipant() {
-  const { state, setPrediction, getPrediction } = useStore()
+  const { state, getPredictions } = useStore()
   const { participants, matches, settings } = state
   const tmap = useMemo(() => teamMap(state.teams), [state.teams])
   const [pid, setPid] = useState(participants[0]?.id ?? '')
 
   const participant = participants.find((p) => p.id === pid) ?? participants[0]
-
   const byStage = useMemo(() => groupByStage(matches), [matches])
 
   const progress = useMemo(() => {
     const total = matches.length
     const done = matches.filter(
-      (m) => getPrediction(participant.id, m.id) !== undefined,
+      (m) => getPredictions(participant.id, m.id).length > 0,
     ).length
     return { done, total }
-  }, [matches, participant.id, getPrediction])
+  }, [matches, participant.id, getPredictions])
 
   return (
     <div className="space-y-4">
@@ -161,7 +162,7 @@ function ByParticipant() {
             />
           </div>
           <span className="text-xs font-semibold text-slate-500">
-            {progress.done}/{progress.total} palpites
+            {progress.done}/{progress.total} jogos
           </span>
         </div>
       </div>
@@ -177,13 +178,12 @@ function ByParticipant() {
               )}
               <div className="space-y-2">
                 {ms.map((m) => (
-                  <PredictionRow
+                  <MatchPalpiteCard
                     key={m.id}
                     match={m}
                     tmap={tmap}
-                    prediction={getPrediction(participant.id, m.id)}
+                    participantId={participant.id}
                     rules={settings.scoring}
-                    onChange={(h, a) => setPrediction(participant.id, m.id, h, a)}
                   />
                 ))}
               </div>
@@ -195,118 +195,48 @@ function ByParticipant() {
   )
 }
 
-function PredictionRow({
+function MatchPalpiteCard({
   match,
   tmap,
-  prediction,
-  onChange,
+  participantId,
   rules,
 }: {
   match: Match
   tmap: ReturnType<typeof teamMap>
-  prediction: ReturnType<ReturnType<typeof useStore>['getPrediction']>
-  onChange: (home: number, away: number) => void
-  rules: { exact: number; result: number; goals: number }
+  participantId: string
+  rules: ScoringRules
 }) {
   const home = getTeam(tmap, match.homeCode, match.homeLabel)
   const away = getTeam(tmap, match.awayCode, match.awayLabel)
 
-  const [h, setH] = useState(prediction ? String(prediction.homeScore) : '')
-  const [a, setA] = useState(prediction ? String(prediction.awayScore) : '')
-
-  // sincroniza com mudança externa de participante/palpite
-  const key = `${match.id}:${prediction?.updatedAt ?? 'none'}`
-  const [lastKey, setLastKey] = useState(key)
-  if (key !== lastKey) {
-    setLastKey(key)
-    setH(prediction ? String(prediction.homeScore) : '')
-    setA(prediction ? String(prediction.awayScore) : '')
-  }
-
-  const commit = (hv: string, av: string) => {
-    if (hv === '' || av === '') return
-    const hn = clamp(hv)
-    const an = clamp(av)
-    onChange(hn, an)
-  }
-
-  const scored = match.finished
-    ? scorePrediction(prediction, match, rules)
-    : null
-
   return (
-    <div
-      className={cx(
-        'card p-3',
-        scored && scored.type !== 'pending' && hitBg(scored.type),
-      )}
-    >
+    <div className="card p-3">
       <div className="flex items-center gap-2 sm:gap-3">
         <TeamPill team={home} align="right" className="flex-1" />
-        <div className="flex shrink-0 items-center gap-1.5">
-          <PredInput
-            value={h}
-            onChange={(v) => {
-              setH(v)
-              commit(v, a)
-            }}
-          />
-          <span className="text-xs font-bold text-slate-300">×</span>
-          <PredInput
-            value={a}
-            onChange={(v) => {
-              setA(v)
-              commit(h, v)
-            }}
-          />
-        </div>
+        {match.finished ? (
+          <span className="shrink-0 rounded-lg bg-slate-900 px-2 py-1 text-sm font-black text-white">
+            {match.homeScore} × {match.awayScore}
+          </span>
+        ) : (
+          <span className="shrink-0 text-xs font-bold text-slate-300">×</span>
+        )}
         <TeamPill team={away} className="flex-1" />
       </div>
 
-      {match.finished && (
-        <div className="mt-2 flex items-center justify-center gap-2 text-xs">
-          <span className="flex items-center gap-1 font-semibold text-slate-500">
-            <Lock size={11} /> Resultado: {match.homeScore} × {match.awayScore}
-          </span>
-          {scored && (
-            <span className={cx('chip', hitChip(scored.type))}>
-              {hitLabel(scored.type)} · {scored.points} pts
-            </span>
-          )}
-        </div>
-      )}
+      <PalpiteList
+        participantId={participantId}
+        matchId={match.id}
+        match={match}
+        rules={rules}
+      />
     </div>
-  )
-}
-
-function PredInput({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: string
-  onChange: (v: string) => void
-  disabled?: boolean
-}) {
-  return (
-    <input
-      type="number"
-      inputMode="numeric"
-      min={0}
-      max={99}
-      disabled={disabled}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder="-"
-      className="h-11 w-11 rounded-xl border border-slate-300 bg-white text-center text-lg font-extrabold text-slate-900 outline-none transition focus:border-pitch-500 focus:ring-2 focus:ring-pitch-500/20 disabled:bg-slate-100"
-    />
   )
 }
 
 // ===== Modo: por jogo =====
 
 function ByMatch() {
-  const { state, setPrediction, getPrediction } = useStore()
+  const { state } = useStore()
   const { participants, matches, settings } = state
   const tmap = useMemo(() => teamMap(state.teams), [state.teams])
   const [mid, setMid] = useState(matches[0]?.id ?? '')
@@ -367,52 +297,118 @@ function ByMatch() {
 
       {/* Palpites de cada um */}
       <div className="space-y-2">
-        {participants.map((p) => {
-          const pred = getPrediction(p.id, match.id)
-          const scored = match.finished
-            ? scorePrediction(pred, match, settings.scoring)
-            : null
-          return (
-            <MatchPredEditor
-              key={p.id}
+        {participants.map((p) => (
+          <div key={p.id} className="card p-3">
+            <div className="flex items-center gap-2">
+              <Avatar name={p.name} color={p.color} size={30} />
+              <span className="flex-1 truncate font-semibold text-slate-700">
+                {p.name}
+              </span>
+            </div>
+            <PalpiteList
+              participantId={p.id}
               matchId={match.id}
-              name={p.name}
-              color={p.color}
-              pred={pred}
-              scored={scored}
-              onChange={(h, a) => setPrediction(p.id, match.id, h, a)}
+              match={match}
+              rules={settings.scoring}
             />
-          )
-        })}
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
-function MatchPredEditor({
-  matchId,
-  name,
-  color,
-  pred,
-  scored,
-  onChange,
-}: {
-  matchId: string
-  name: string
-  color: string
-  pred: ReturnType<ReturnType<typeof useStore>['getPrediction']>
-  scored: ReturnType<typeof scorePrediction> | null
-  onChange: (home: number, away: number) => void
-}) {
-  const [h, setH] = useState(pred ? String(pred.homeScore) : '')
-  const [a, setA] = useState(pred ? String(pred.awayScore) : '')
+// ===== Lista de palpites de um (participante, jogo) =====
 
-  const key = `${matchId}:${pred?.updatedAt ?? 'none'}`
+function PalpiteList({
+  participantId,
+  matchId,
+  match,
+  rules,
+}: {
+  participantId: string
+  matchId: string
+  match: Match
+  rules: ScoringRules
+}) {
+  const { getPredictions, addPrediction, updatePrediction, removePrediction } =
+    useStore()
+  const preds = getPredictions(participantId, matchId)
+  const best = match.finished ? bestScore(preds, match, rules) : null
+
+  return (
+    <div className="mt-2.5 border-t border-slate-100 pt-2.5">
+      {preds.length === 0 && (
+        <p className="mb-2 text-center text-xs text-slate-400">
+          Sem palpite ainda
+        </p>
+      )}
+
+      <div className="space-y-1.5">
+        {preds.map((pred, i) => (
+          <PalpiteRow
+            key={pred.id}
+            index={i}
+            pred={pred}
+            match={match}
+            rules={rules}
+            isBest={!!best && best.bestId === pred.id && best.points > 0}
+            onChange={(h, a) =>
+              updatePrediction(participantId, matchId, pred.id, h, a)
+            }
+            onRemove={() => removePrediction(participantId, matchId, pred.id)}
+          />
+        ))}
+      </div>
+
+      <button
+        onClick={() => addPrediction(participantId, matchId, 0, 0)}
+        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-semibold text-slate-500 transition hover:border-pitch-400 hover:bg-pitch-50 hover:text-pitch-600"
+      >
+        <Plus size={14} /> Adicionar palpite
+      </button>
+
+      {match.finished && best && best.type !== 'pending' && (
+        <div className="mt-2 flex items-center justify-center gap-2 text-xs">
+          <span className="flex items-center gap-1 font-semibold text-slate-500">
+            <Lock size={11} /> Resultado {match.homeScore}×{match.awayScore}
+          </span>
+          <span className={cx('chip', hitChip(best.type))}>
+            melhor: {best.points} pts
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PalpiteRow({
+  index,
+  pred,
+  match,
+  rules,
+  isBest,
+  onChange,
+  onRemove,
+}: {
+  index: number
+  pred: Prediction
+  match: Match
+  rules: ScoringRules
+  isBest: boolean
+  onChange: (home: number, away: number) => void
+  onRemove: () => void
+}) {
+  const [h, setH] = useState(String(pred.homeScore))
+  const [a, setA] = useState(String(pred.awayScore))
+
+  // sincroniza com mudança externa do palpite
+  const key = `${pred.id}:${pred.updatedAt}`
   const [lastKey, setLastKey] = useState(key)
   if (key !== lastKey) {
     setLastKey(key)
-    setH(pred ? String(pred.homeScore) : '')
-    setA(pred ? String(pred.awayScore) : '')
+    setH(String(pred.homeScore))
+    setA(String(pred.awayScore))
   }
 
   const commit = (hv: string, av: string) => {
@@ -420,16 +416,19 @@ function MatchPredEditor({
     onChange(clamp(hv), clamp(av))
   }
 
+  const scored = match.finished ? scorePrediction(pred, match, rules) : null
+
   return (
-    <div className={cx('card flex items-center gap-3 p-3', scored && scored.type !== 'pending' && hitBg(scored.type))}>
-      <Avatar name={name} color={color} size={34} />
-      <span className="flex-1 truncate font-semibold text-slate-700">{name}</span>
-      {scored && scored.type !== 'pending' && (
-        <span className={cx('chip', hitChip(scored.type))}>
-          {scored.points} pts
-        </span>
+    <div
+      className={cx(
+        'flex items-center gap-2 rounded-xl px-2 py-1.5',
+        isBest ? 'bg-pitch-50 ring-1 ring-pitch-200' : 'bg-slate-50',
       )}
-      <div className="flex shrink-0 items-center gap-1.5">
+    >
+      <span className="w-5 shrink-0 text-center text-[11px] font-bold text-slate-400">
+        {index + 1}
+      </span>
+      <div className="flex flex-1 items-center justify-center gap-1.5">
         <PredInput
           value={h}
           onChange={(v) => {
@@ -446,7 +445,40 @@ function MatchPredEditor({
           }}
         />
       </div>
+      {scored && scored.type !== 'pending' && (
+        <span className={cx('chip shrink-0', hitChip(scored.type))}>
+          {scored.points}
+        </span>
+      )}
+      <button
+        onClick={onRemove}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+        aria-label="Remover palpite"
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
+  )
+}
+
+function PredInput({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={0}
+      max={99}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="-"
+      className="h-10 w-10 rounded-lg border border-slate-300 bg-white text-center text-base font-extrabold text-slate-900 outline-none transition focus:border-pitch-500 focus:ring-2 focus:ring-pitch-500/20"
+    />
   )
 }
 
@@ -507,19 +539,6 @@ function clamp(v: string): number {
   return Math.max(0, Math.min(99, parseInt(v, 10) || 0))
 }
 
-function hitBg(type: HitType): string {
-  switch (type) {
-    case 'exact':
-      return 'ring-1 ring-pitch-300 bg-pitch-50/50'
-    case 'result':
-      return 'ring-1 ring-blue-200 bg-blue-50/40'
-    case 'goals':
-      return 'ring-1 ring-gold-200 bg-gold-50/40'
-    default:
-      return ''
-  }
-}
-
 function hitChip(type: HitType): string {
   switch (type) {
     case 'exact':
@@ -530,18 +549,5 @@ function hitChip(type: HitType): string {
       return 'bg-gold-100 text-gold-700'
     default:
       return 'bg-slate-100 text-slate-500'
-  }
-}
-
-function hitLabel(type: HitType): string {
-  switch (type) {
-    case 'exact':
-      return 'Placar exato'
-    case 'result':
-      return 'Resultado certo'
-    case 'goals':
-      return 'Gols de um time'
-    default:
-      return 'Errou'
   }
 }

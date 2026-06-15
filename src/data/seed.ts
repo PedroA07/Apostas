@@ -2,7 +2,7 @@ import type { AppState, Match, PoolSettings } from '../types'
 import { TEAMS, GROUPS, GROUP_LETTERS } from './teams'
 import { VENUES } from './venues'
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export const DEFAULT_SETTINGS: PoolSettings = {
   name: 'Bolão da Copa 2026',

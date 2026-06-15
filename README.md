@@ -11,8 +11,8 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
 - **Painel** com o prêmio total acumulado, próximos jogos e líder do bolão.
 - **Participantes (amigos)**: adicione todo mundo com o **valor que cada um
   aposta** (com um valor padrão para agilizar), marque quem já pagou e acompanhe
-  quanto foi arrecadado e quanto falta receber. Cada pessoa pode ter **mais de um
-  palpite (bilhete)** e cadastrar a **chave Pix** para receber o prêmio.
+  quanto foi arrecadado e quanto falta receber. Cada um cadastra a **chave Pix**
+  para receber o prêmio.
 - **Pix do vencedor**: ao fim do bolão aparece o campeão com um botão para
   **copiar a chave Pix do vencedor**, e as posições premiadas também têm botão de
   copiar Pix para facilitar o pagamento.
@@ -29,10 +29,13 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
   derrotas e gols), o grupo, todos os jogos do Brasil (com lançamento de
   resultado), os palpites de cada um nesses jogos e um **ranking específico dos
   jogos do Brasil**.
-- **Palpites**: registre o placar que cada um cravou, por pessoa (preenchendo
-  todos os jogos de um participante) ou por jogo (comparando o palpite de todos).
+- **Palpites**: registre os placares, por pessoa ou por jogo. Cada apostador pode
+  dar **quantos palpites quiser para o mesmo jogo** — vale o **melhor** deles na
+  pontuação.
 - **Ranking**: classificação automática com pódio, pontos, placares exatos e a
-  divisão do prêmio em dinheiro.
+  divisão do prêmio em dinheiro. **Trata empates**: quem empata divide a mesma
+  posição, e se houver empate na liderança todos aparecem como campeões com o
+  prêmio dividido (cada um com seu botão de Pix).
 - **Pontuação configurável**: placar exato, resultado certo e acerto dos gols de
   um time — você define quantos pontos vale cada um.
 - **Valor da aposta e prêmios**: defina o buy-in por pessoa, a moeda e como o
@@ -52,8 +55,13 @@ todos editáveis em **Configurações → Pontuação**):
 | Só os gols de um time (errou o resultado) | 2 | palpitou 0×1 (acertou o 1 do visitante) |
 | Errou tudo | 0 | palpitou 0×3 |
 
+Quando alguém dá **vários palpites no mesmo jogo**, conta o **melhor** deles
+naquele jogo. Empates do jogo (ex: 1×1) contam normalmente como "resultado".
+
 O **prêmio total** é a soma do valor da aposta de todos que pagaram, dividido
-entre os primeiros colocados conforme os percentuais configurados.
+entre os primeiros colocados conforme os percentuais configurados. Em caso de
+**empate na classificação**, os empatados dividem igualmente o prêmio das
+posições que ocupam.
 
 ## 🚀 Como rodar
 

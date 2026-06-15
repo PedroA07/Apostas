@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useStore } from '../store/store'
-import { computeStandings } from '../store/scoring'
+import { computeStandings, type StandingRow } from '../store/scoring'
 import { Avatar, CopyButton, EmptyState, SectionTitle } from '../components/ui'
 import { cx, formatMoney, potSummary } from '../utils'
 
@@ -24,10 +24,20 @@ export default function RankingView() {
   )
 
   const { collected: totalPot } = potSummary(participants, settings)
-  const prizeFor = (i: number): number => {
-    const { first, second, third } = settings.prizeSplit
-    const pct = i === 0 ? first : i === 1 ? second : i === 2 ? third : 0
-    return (totalPot * pct) / 100
+  const pcts = [
+    settings.prizeSplit.first,
+    settings.prizeSplit.second,
+    settings.prizeSplit.third,
+  ]
+
+  // prêmio de uma posição, dividindo entre empatados (e somando as faixas que o grupo ocupa)
+  const prizeForRow = (row: StandingRow): number => {
+    if (row.position > 3) return 0
+    const tied = standings.filter((r) => r.position === row.position)
+    const startIdx = row.position - 1
+    let sumPct = 0
+    for (let k = 0; k < tied.length; k++) sumPct += pcts[startIdx + k] ?? 0
+    return (totalPot * sumPct) / 100 / tied.length
   }
 
   if (participants.length === 0) {
@@ -48,17 +58,16 @@ export default function RankingView() {
   }
 
   const top3 = standings.slice(0, 3)
-  const rest = standings.slice(3)
   const podiumOrder = [1, 0, 2] // 2º, 1º, 3º para o pódio
 
-  // campeão definido quando todos os jogos terminaram
-  const allFinished =
-    matches.length > 0 && matches.every((m) => m.finished)
-  const champion = standings[0]
-  const championP =
-    champion && champion.points > 0
-      ? participants.find((p) => p.id === champion.participantId)
-      : undefined
+  // campeão(ões) — pode haver empate na liderança
+  const allFinished = matches.length > 0 && matches.every((m) => m.finished)
+  const leaders = standings.filter((r) => r.points > 0 && r.position === 1)
+  const leaderCards = leaders.map((row) => ({
+    row,
+    p: participants.find((pp) => pp.id === row.participantId)!,
+  }))
+  const tie = leaders.length > 1
 
   return (
     <div className="space-y-5">
@@ -68,35 +77,49 @@ export default function RankingView() {
         subtitle="Classificação geral e premiação"
       />
 
-      {/* Banner do campeão (fim do bolão) */}
-      {allFinished && championP && (
+      {/* Banner do(s) campeão(ões) — trata empate na liderança */}
+      {allFinished && leaders.length > 0 && (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gold-400 via-gold-500 to-amber-600 p-5 text-white shadow-card">
           <PartyPopper className="absolute -right-3 -top-3 opacity-20" size={90} />
-          <div className="relative flex flex-wrap items-center gap-4">
-            <Avatar name={championP.name} color={championP.color} size={56} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 text-sm font-semibold text-white/90">
-                <Crown size={16} fill="currentColor" /> Campeão do bolão
-              </div>
-              <div className="truncate text-2xl font-black">
-                {championP.name}
-              </div>
-              <div className="text-sm text-white/90">
-                {champion.points} pts · prêmio{' '}
-                {formatMoney(prizeFor(0), settings.currency)}
-              </div>
+          <div className="relative">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-white/90">
+              <Crown size={16} fill="currentColor" />
+              {tie
+                ? `Empate na liderança — ${leaders.length} campeões!`
+                : 'Campeão do bolão'}
             </div>
-            {championP.pixKey ? (
-              <CopyButton
-                value={championP.pixKey}
-                label="Copiar Pix do vencedor"
-                copiedLabel="Pix copiado!"
-                className="btn w-full justify-center bg-white/95 text-amber-700 hover:bg-white sm:w-auto"
-              />
-            ) : (
-              <span className="rounded-xl bg-white/15 px-3 py-2 text-xs font-semibold">
-                Sem chave Pix — adicione na aba Amigos
-              </span>
+            <div className="mt-2 space-y-2">
+              {leaderCards.map(({ row, p }) => (
+                <div
+                  key={p.id}
+                  className="flex flex-wrap items-center gap-3 rounded-xl bg-white/15 p-2.5 backdrop-blur-sm"
+                >
+                  <Avatar name={p.name} color={p.color} size={48} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-lg font-black">{p.name}</div>
+                    <div className="text-xs text-white/90">
+                      {row.points} pts · {formatMoney(prizeForRow(row), settings.currency)}
+                    </div>
+                  </div>
+                  {p.pixKey ? (
+                    <CopyButton
+                      value={p.pixKey}
+                      label="Copiar Pix"
+                      copiedLabel="Pix copiado!"
+                      className="btn shrink-0 bg-white/95 text-amber-700 hover:bg-white"
+                    />
+                  ) : (
+                    <span className="shrink-0 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-semibold">
+                      Sem Pix — veja Amigos
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+            {tie && (
+              <p className="mt-2 text-xs text-white/85">
+                Prêmio dividido igualmente entre os empatados.
+              </p>
             )}
           </div>
         </div>
@@ -111,11 +134,12 @@ export default function RankingView() {
             const p = participants.find((pp) => pp.id === row.participantId)!
             const heights = ['h-24', 'h-32', 'h-20']
             const place = idx
+            const prize = prizeForRow(row)
             return (
               <div key={row.participantId} className="flex flex-col items-center">
                 <div className="relative mb-2">
                   <Avatar name={p.name} color={p.color} size={place === 0 ? 64 : 52} />
-                  {place === 0 && (
+                  {row.position === 1 && (
                     <Crown
                       className="absolute -top-3 left-1/2 -translate-x-1/2 text-gold-500"
                       size={22}
@@ -142,10 +166,10 @@ export default function RankingView() {
                         : 'bg-gradient-to-b from-orange-300 to-orange-400',
                   )}
                 >
-                  <span className="text-2xl font-black">{place + 1}º</span>
-                  {prizeFor(place) > 0 && (
+                  <span className="text-2xl font-black">{row.position}º</span>
+                  {prize > 0 && (
                     <span className="mt-1 px-1 text-center text-[11px] font-bold leading-tight">
-                      {formatMoney(prizeFor(place), settings.currency)}
+                      {formatMoney(prize, settings.currency)}
                     </span>
                   )}
                 </div>
@@ -173,31 +197,29 @@ export default function RankingView() {
         </div>
 
         <div className="divide-y divide-slate-50">
-          {standings.map((row, i) => {
+          {standings.map((row) => {
             const p = participants.find((pp) => pp.id === row.participantId)!
-            const prize = prizeFor(i)
+            const prize = prizeForRow(row)
+            const pos = row.position
             return (
               <div
                 key={row.participantId}
-                className={cx(
-                  'flex items-center gap-3 px-4 py-3 sm:grid sm:grid-cols-[2.5rem_1fr_repeat(4,3.5rem)] sm:gap-2',
-                  i < 3 && 'bg-gradient-to-r from-transparent to-transparent',
-                )}
+                className="flex items-center gap-3 px-4 py-3 sm:grid sm:grid-cols-[2.5rem_1fr_repeat(4,3.5rem)] sm:gap-2"
               >
                 <div className="flex items-center justify-center">
                   <span
                     className={cx(
                       'grid h-7 w-7 place-items-center rounded-full text-xs font-bold',
-                      i === 0
+                      pos === 1
                         ? 'bg-gold-100 text-gold-700'
-                        : i === 1
+                        : pos === 2
                           ? 'bg-slate-200 text-slate-600'
-                          : i === 2
+                          : pos === 3
                             ? 'bg-orange-100 text-orange-700'
                             : 'bg-slate-50 text-slate-400',
                     )}
                   >
-                    {i + 1}
+                    {pos}
                   </span>
                 </div>
 
@@ -263,7 +285,7 @@ export default function RankingView() {
         {settings.scoring.result}, gols de um time = +{settings.scoring.goals}
       </p>
 
-      {rest.length === 0 && standings.every((r) => r.points === 0) && (
+      {standings.every((r) => r.points === 0) && (
         <p className="text-center text-sm text-slate-400">
           Os pontos aparecem assim que você lançar os resultados dos jogos.
         </p>

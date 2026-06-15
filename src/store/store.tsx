@@ -27,6 +27,30 @@ import {
 
 const STORAGE_KEY = 'bolao-copa-2026'
 
+/**
+ * Migra os palpites do formato antigo (um objeto por jogo) para o novo
+ * (lista de palpites por jogo) e garante que cada palpite tenha id.
+ */
+function migratePredictions(raw: unknown): Record<string, Prediction[]> {
+  const out: Record<string, Prediction[]> = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+    const arr = Array.isArray(val) ? val : val ? [val] : []
+    const list = arr
+      .filter((pr): pr is Record<string, unknown> => !!pr && typeof pr === 'object')
+      .map((pr) => ({
+        id: typeof pr.id === 'string' ? pr.id : uid('g_'),
+        participantId: String(pr.participantId ?? ''),
+        matchId: String(pr.matchId ?? ''),
+        homeScore: Number(pr.homeScore ?? 0),
+        awayScore: Number(pr.awayScore ?? 0),
+        updatedAt: typeof pr.updatedAt === 'number' ? pr.updatedAt : Date.now(),
+      }))
+    if (list.length > 0) out[key] = list
+  }
+  return out
+}
+
 /** Garante que todos os campos (inclusive os novos) existam, mesclando com os padrões. */
 function normalizeState(parsed: Partial<AppState>): AppState {
   const base = createInitialState()
@@ -34,6 +58,7 @@ function normalizeState(parsed: Partial<AppState>): AppState {
   return {
     ...base,
     ...parsed,
+    predictions: migratePredictions(parsed.predictions),
     settings: {
       ...base.settings,
       ...settings,
@@ -76,8 +101,6 @@ interface StoreContextValue {
   updateParticipant: (id: string, patch: Partial<Participant>) => void
   removeParticipant: (id: string) => void
   togglePaid: (id: string) => void
-  /** Cria outro palpite (bilhete) para a mesma pessoa, copiando nome/cor/Pix. */
-  duplicateParticipant: (id: string) => void
   // teams & groups
   setTeams: (teams: Team[]) => void
   setGroups: (groups: Record<string, string[]>) => void
@@ -87,17 +110,26 @@ interface StoreContextValue {
   updateMatch: (id: string, patch: Partial<Match>) => void
   removeMatch: (id: string) => void
   setResult: (id: string, home: number | null, away: number | null) => void
-  // predictions
-  setPrediction: (
+  // predictions (vários por jogo)
+  addPrediction: (
     participantId: string,
     matchId: string,
     home: number,
     away: number,
   ) => void
-  getPrediction: (
+  updatePrediction: (
     participantId: string,
     matchId: string,
-  ) => Prediction | undefined
+    predId: string,
+    home: number,
+    away: number,
+  ) => void
+  removePrediction: (
+    participantId: string,
+    matchId: string,
+    predId: string,
+  ) => void
+  getPredictions: (participantId: string, matchId: string) => Prediction[]
   // data management
   exportData: () => void
   importData: (json: string) => boolean
@@ -148,24 +180,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }) => {
       setState((s) => {
         // mantém apenas palpites de jogos que ainda existem (por externalId)
-        const validExternal = new Set(
-          data.matches.map((m) => m.externalId).filter((x) => x != null),
-        )
         const oldById = new Map(s.matches.map((m) => [m.id, m]))
-        const predictions: Record<string, Prediction> = {}
-        for (const pred of Object.values(s.predictions)) {
-          const old = oldById.get(pred.matchId)
-          if (old?.externalId != null && validExternal.has(old.externalId)) {
+        const byExternal = new Map<number, Match>()
+        for (const m of data.matches) {
+          if (m.externalId != null) byExternal.set(m.externalId, m)
+        }
+        const predictions: Record<string, Prediction[]> = {}
+        for (const list of Object.values(s.predictions)) {
+          for (const pred of list) {
+            const old = oldById.get(pred.matchId)
+            const novo =
+              old?.externalId != null ? byExternal.get(old.externalId) : undefined
+            if (!novo) continue
             // re-mapeia o palpite para o novo id do mesmo jogo
-            const novo = data.matches.find(
-              (m) => m.externalId === old.externalId,
-            )
-            if (novo) {
-              predictions[`${pred.participantId}:${novo.id}`] = {
-                ...pred,
-                matchId: novo.id,
-              }
-            }
+            const key = `${pred.participantId}:${novo.id}`
+            ;(predictions[key] ??= []).push({ ...pred, matchId: novo.id })
           }
         }
         return {
@@ -205,28 +234,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     [],
   )
-
-  const duplicateParticipant = useCallback((id: string) => {
-    setState((s) => {
-      const original = s.participants.find((p) => p.id === id)
-      if (!original) return s
-      // nome base sem sufixo " (n)" e próximo número livre
-      const base = original.name.replace(/\s*\(\d+\)\s*$/, '').trim()
-      let n = 2
-      const taken = new Set(s.participants.map((p) => p.name))
-      while (taken.has(`${base} (${n})`)) n++
-      const copy: Participant = {
-        id: uid('p_'),
-        name: `${base} (${n})`,
-        color: original.color,
-        paid: false,
-        betValue: original.betValue,
-        pixKey: original.pixKey,
-        createdAt: Date.now(),
-      }
-      return { ...s, participants: [...s.participants, copy] }
-    })
-  }, [])
 
   const updateParticipant = useCallback(
     (id: string, patch: Partial<Participant>) => {
@@ -282,9 +289,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...knockout.map((m) => m.id),
           ...newGroupMatches.map((m) => m.id),
         ])
-        const predictions: Record<string, Prediction> = {}
-        for (const [key, pred] of Object.entries(s.predictions)) {
-          if (validIds.has(pred.matchId)) predictions[key] = pred
+        const predictions: Record<string, Prediction[]> = {}
+        for (const [key, list] of Object.entries(s.predictions)) {
+          const kept = list.filter((p) => validIds.has(p.matchId))
+          if (kept.length > 0) predictions[key] = kept
         }
         return {
           ...s,
@@ -344,28 +352,75 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const setPrediction = useCallback(
+  const addPrediction = useCallback(
     (participantId: string, matchId: string, home: number, away: number) => {
-      setState((s) => ({
-        ...s,
-        predictions: {
-          ...s.predictions,
-          [predKey(participantId, matchId)]: {
-            participantId,
-            matchId,
-            homeScore: home,
-            awayScore: away,
-            updatedAt: Date.now(),
-          },
-        },
-      }))
+      setState((s) => {
+        const key = predKey(participantId, matchId)
+        const list = s.predictions[key] ?? []
+        const pred: Prediction = {
+          id: uid('g_'),
+          participantId,
+          matchId,
+          homeScore: home,
+          awayScore: away,
+          updatedAt: Date.now(),
+        }
+        return {
+          ...s,
+          predictions: { ...s.predictions, [key]: [...list, pred] },
+        }
+      })
     },
     [],
   )
 
-  const getPrediction = useCallback(
-    (participantId: string, matchId: string) =>
-      state.predictions[predKey(participantId, matchId)],
+  const updatePrediction = useCallback(
+    (
+      participantId: string,
+      matchId: string,
+      predId: string,
+      home: number,
+      away: number,
+    ) => {
+      setState((s) => {
+        const key = predKey(participantId, matchId)
+        const list = s.predictions[key]
+        if (!list) return s
+        return {
+          ...s,
+          predictions: {
+            ...s.predictions,
+            [key]: list.map((p) =>
+              p.id === predId
+                ? { ...p, homeScore: home, awayScore: away, updatedAt: Date.now() }
+                : p,
+            ),
+          },
+        }
+      })
+    },
+    [],
+  )
+
+  const removePrediction = useCallback(
+    (participantId: string, matchId: string, predId: string) => {
+      setState((s) => {
+        const key = predKey(participantId, matchId)
+        const list = s.predictions[key]
+        if (!list) return s
+        const next = list.filter((p) => p.id !== predId)
+        const predictions = { ...s.predictions }
+        if (next.length === 0) delete predictions[key]
+        else predictions[key] = next
+        return { ...s, predictions }
+      })
+    },
+    [],
+  )
+
+  const getPredictions = useCallback(
+    (participantId: string, matchId: string): Prediction[] =>
+      state.predictions[predKey(participantId, matchId)] ?? [],
     [state.predictions],
   )
 
@@ -408,7 +463,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateParticipant,
       removeParticipant,
       togglePaid,
-      duplicateParticipant,
       setTeams,
       setGroups,
       regenerateGroupMatches,
@@ -416,8 +470,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateMatch,
       removeMatch,
       setResult,
-      setPrediction,
-      getPrediction,
+      addPrediction,
+      updatePrediction,
+      removePrediction,
+      getPredictions,
       exportData,
       importData,
       resetAll,
@@ -432,7 +488,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateParticipant,
       removeParticipant,
       togglePaid,
-      duplicateParticipant,
       setTeams,
       setGroups,
       regenerateGroupMatches,
@@ -440,8 +495,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateMatch,
       removeMatch,
       setResult,
-      setPrediction,
-      getPrediction,
+      addPrediction,
+      updatePrediction,
+      removePrediction,
+      getPredictions,
       exportData,
       importData,
       resetAll,

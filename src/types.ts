@@ -58,7 +58,8 @@ export interface Participant {
 }
 
 export interface Prediction {
-  /** chave composta participantId + matchId */
+  /** id único do palpite (um jogador pode ter vários palpites no mesmo jogo) */
+  id: string
   participantId: string
   matchId: string
   homeScore: number
@@ -115,8 +116,8 @@ export interface AppState {
   groups: Record<string, string[]>
   participants: Participant[]
   matches: Match[]
-  /** mapa "participantId:matchId" -> Prediction */
-  predictions: Record<string, Prediction>
+  /** mapa "participantId:matchId" -> lista de palpites (vários por jogo) */
+  predictions: Record<string, Prediction[]>
   /** versão do schema para migrações futuras */
   version: number
 }
