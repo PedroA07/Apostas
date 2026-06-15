@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   CloudDownload,
@@ -18,6 +18,7 @@ import {
 import { useStore } from '../store/store'
 import { useFootball } from '../store/useFootball'
 import { ConfirmButton, SectionTitle } from '../components/ui'
+import { Select, type SelectOption } from '../components/Select'
 import { GROUP_LETTERS } from '../data/teams'
 import { cx } from '../utils'
 
@@ -396,6 +397,14 @@ function GroupsSection() {
   )
   const [saved, setSaved] = useState(false)
 
+  const teamOptions: SelectOption[] = useMemo(
+    () => [
+      { value: '', label: '—' },
+      ...teams.map((t) => ({ value: t.code, label: t.name, flag: t.flag })),
+    ],
+    [teams],
+  )
+
   const setSlot = (letter: string, idx: number, code: string) => {
     setDraft((d) => {
       const next = structuredClone(d)
@@ -440,19 +449,16 @@ function GroupsSection() {
             </div>
             <div className="space-y-1.5">
               {[0, 1, 2, 3].map((idx) => (
-                <select
+                <Select
                   key={idx}
-                  className="input py-2"
                   value={draft[letter]?.[idx] ?? ''}
-                  onChange={(e) => setSlot(letter, idx, e.target.value)}
-                >
-                  <option value="">—</option>
-                  {teams.map((t) => (
-                    <option key={t.code} value={t.code}>
-                      {t.flag} {t.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setSlot(letter, idx, v)}
+                  searchable
+                  searchPlaceholder="Buscar seleção…"
+                  placeholder="—"
+                  buttonClassName="py-2"
+                  options={teamOptions}
+                />
               ))}
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
 import { useStore, STAGE_LABELS, STAGE_ORDER } from '../store/store'
 import { ConfirmButton, EmptyState, Modal, SectionTitle } from '../components/ui'
 import { TeamPill } from '../components/TeamPill'
+import { Select } from '../components/Select'
 import { VENUES } from '../data/venues'
 import {
   cx,
@@ -401,33 +402,30 @@ function MatchFormModal({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Fase</label>
-            <select
-              className="input"
+            <Select
               value={form.stage}
-              onChange={(e) => set({ stage: e.target.value as Stage })}
-            >
-              {STAGE_ORDER.map((s) => (
-                <option key={s} value={s}>
-                  {STAGE_LABELS[s]}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => set({ stage: v as Stage })}
+              options={STAGE_ORDER.map((s) => ({
+                value: s,
+                label: STAGE_LABELS[s],
+              }))}
+            />
           </div>
           {form.stage === 'grupos' && (
             <div>
               <label className="label">Grupo</label>
-              <select
-                className="input"
+              <Select
                 value={form.group}
-                onChange={(e) => set({ group: e.target.value })}
-              >
-                <option value="">—</option>
-                {GROUP_LETTERS.map((g) => (
-                  <option key={g} value={g}>
-                    Grupo {g}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => set({ group: v })}
+                placeholder="—"
+                options={[
+                  { value: '', label: '—' },
+                  ...GROUP_LETTERS.map((g) => ({
+                    value: g,
+                    label: `Grupo ${g}`,
+                  })),
+                ]}
+              />
             </div>
           )}
         </div>
@@ -502,18 +500,21 @@ function TeamSelect({
   return (
     <div>
       <label className="label">{label}</label>
-      <select
-        className="input"
+      <Select
         value={value}
-        onChange={(e) => onCode(e.target.value)}
-      >
-        <option value="">A definir…</option>
-        {teams.map((t) => (
-          <option key={t.code} value={t.code}>
-            {t.flag} {t.name}
-          </option>
-        ))}
-      </select>
+        onChange={onCode}
+        searchable
+        searchPlaceholder="Buscar seleção…"
+        placeholder="A definir…"
+        options={[
+          { value: '', label: 'A definir…' },
+          ...teams.map((t) => ({
+            value: t.code,
+            label: t.name,
+            flag: t.flag,
+          })),
+        ]}
+      />
       {!value && (
         <input
           className="input mt-2"
