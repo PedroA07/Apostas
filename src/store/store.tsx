@@ -51,7 +51,7 @@ interface StoreContextValue {
   // settings
   updateSettings: (patch: Partial<PoolSettings>) => void
   // participants
-  addParticipant: (name: string) => void
+  addParticipant: (name: string, betValue?: number) => void
   updateParticipant: (id: string, patch: Partial<Participant>) => void
   removeParticipant: (id: string) => void
   togglePaid: (id: string) => void
@@ -104,7 +104,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }))
   }, [])
 
-  const addParticipant = useCallback((name: string) => {
+  const addParticipant = useCallback((name: string, betValue?: number) => {
     const trimmed = name.trim()
     if (!trimmed) return
     setState((s) => {
@@ -114,6 +114,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         name: trimmed,
         color,
         paid: false,
+        betValue:
+          betValue != null && !Number.isNaN(betValue) ? betValue : undefined,
         createdAt: Date.now(),
       }
       return { ...s, participants: [...s.participants, participant] }

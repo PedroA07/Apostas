@@ -81,7 +81,10 @@ export default function App() {
       </main>
 
       {/* Navegação inferior (mobile) */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/90 backdrop-blur-lg lg:hidden">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur-lg lg:hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="mx-auto flex max-w-5xl items-stretch justify-around">
           {NAV.map((item) => {
             const Icon = item.icon
@@ -91,11 +94,18 @@ export default function App() {
                 key={item.id}
                 onClick={() => setTab(item.id)}
                 className={cx(
-                  'flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold transition',
+                  'flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-semibold transition',
                   active ? 'text-pitch-600' : 'text-slate-400',
                 )}
               >
-                <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                <span
+                  className={cx(
+                    'grid place-items-center rounded-lg px-3 py-1 transition',
+                    active && 'bg-pitch-50',
+                  )}
+                >
+                  <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                </span>
                 {item.label}
               </button>
             )

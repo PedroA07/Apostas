@@ -3,7 +3,7 @@ import { Crown, Medal, Target, TrendingUp, Trophy, Users } from 'lucide-react'
 import { useStore } from '../store/store'
 import { computeStandings } from '../store/scoring'
 import { Avatar, EmptyState, SectionTitle } from '../components/ui'
-import { cx, formatMoney } from '../utils'
+import { cx, formatMoney, potSummary } from '../utils'
 
 export default function RankingView() {
   const { state } = useStore()
@@ -14,8 +14,7 @@ export default function RankingView() {
     [participants, matches, predictions, settings.scoring],
   )
 
-  const paidCount = participants.filter((p) => p.paid).length
-  const totalPot = paidCount * settings.buyIn
+  const { collected: totalPot } = potSummary(participants, settings)
   const prizeFor = (i: number): number => {
     const { first, second, third } = settings.prizeSplit
     const pct = i === 0 ? first : i === 1 ? second : i === 2 ? third : 0

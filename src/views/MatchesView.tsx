@@ -249,7 +249,7 @@ function MatchCard({
             </span>
           )}
         </span>
-        <div className="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+        <div className="flex items-center gap-0.5 opacity-100 transition lg:opacity-0 lg:group-hover:opacity-100">
           <button
             onClick={onEdit}
             className="grid h-7 w-7 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600"

@@ -84,16 +84,18 @@ function PoolSection({
           />
         </div>
         <div>
-          <label className="label">Valor da aposta (por pessoa)</label>
+          <label className="label">Valor padrão da aposta</label>
           <div className="flex gap-2">
             <input
               className="input w-20 shrink-0 text-center"
               value={currency}
               onChange={(e) => onSave({ currency: e.target.value })}
               maxLength={4}
+              aria-label="Moeda"
             />
             <input
               type="number"
+              inputMode="decimal"
               min={0}
               step="0.01"
               className="input"
@@ -104,8 +106,9 @@ function PoolSection({
         </div>
         <div className="flex items-end">
           <p className="text-sm text-slate-500">
-            Esse é o valor que cada participante paga para entrar. O prêmio total
-            é a soma de todos que pagaram.
+            Valor que cada participante paga por padrão. Dá para definir um valor
+            diferente para cada amigo na aba <strong>Amigos</strong>. O prêmio
+            total é a soma de todos que pagaram.
           </p>
         </div>
       </div>
@@ -310,7 +313,7 @@ function GroupsSection() {
               {[0, 1, 2, 3].map((idx) => (
                 <select
                   key={idx}
-                  className="input py-1.5 text-sm"
+                  className="input py-2"
                   value={draft[letter]?.[idx] ?? ''}
                   onChange={(e) => setSlot(letter, idx, e.target.value)}
                 >

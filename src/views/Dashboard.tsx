@@ -16,6 +16,7 @@ import {
   formatDateTime,
   formatMoney,
   getTeam,
+  potSummary,
   teamMap,
 } from '../utils'
 import type { Match } from '../types'
@@ -25,9 +26,10 @@ export default function Dashboard({ go }: { go: (tab: string) => void }) {
   const { settings, participants, matches, predictions } = state
   const tmap = useMemo(() => teamMap(state.teams), [state.teams])
 
-  const paidCount = participants.filter((p) => p.paid).length
-  const totalPot = paidCount * settings.buyIn
-  const expectedPot = participants.length * settings.buyIn
+  const { collected: totalPot, expected: expectedPot, paidCount } = potSummary(
+    participants,
+    settings,
+  )
 
   const standings = useMemo(
     () => computeStandings(participants, matches, predictions, settings.scoring),
@@ -73,8 +75,7 @@ export default function Dashboard({ go }: { go: (tab: string) => void }) {
             {formatMoney(totalPot, settings.currency)}
           </p>
           <p className="mt-1 text-sm text-pitch-50/80">
-            {paidCount} de {participants.length} pagaram ·{' '}
-            {formatMoney(settings.buyIn, settings.currency)} por pessoa
+            {paidCount} de {participants.length} pagaram
             {expectedPot > totalPot && (
               <> · previsto {formatMoney(expectedPot, settings.currency)}</>
             )}
@@ -124,7 +125,7 @@ export default function Dashboard({ go }: { go: (tab: string) => void }) {
           accent="gold"
         />
         <StatCard
-          label="Valor da aposta"
+          label="Valor padrão"
           value={formatMoney(settings.buyIn, settings.currency)}
           sub="por participante"
           icon={<Banknote size={16} />}

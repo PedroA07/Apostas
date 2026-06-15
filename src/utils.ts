@@ -1,4 +1,41 @@
-import type { Team } from './types'
+import type { Participant, PoolSettings, Team } from './types'
+
+/** Valor apostado por um participante (cai no valor padrão do bolão se não definido). */
+export function participantValue(
+  p: Pick<Participant, 'betValue'>,
+  buyIn: number,
+): number {
+  return p.betValue != null && !Number.isNaN(p.betValue) ? p.betValue : buyIn
+}
+
+export interface PotSummary {
+  /** Total já arrecadado (somente quem pagou) */
+  collected: number
+  /** Total previsto (todos os participantes) */
+  expected: number
+  /** Quanto ainda falta receber */
+  pending: number
+  paidCount: number
+}
+
+/** Resumo financeiro do bolão considerando o valor de cada participante. */
+export function potSummary(
+  participants: Participant[],
+  settings: Pick<PoolSettings, 'buyIn'>,
+): PotSummary {
+  let collected = 0
+  let expected = 0
+  let paidCount = 0
+  for (const p of participants) {
+    const v = participantValue(p, settings.buyIn)
+    expected += v
+    if (p.paid) {
+      collected += v
+      paidCount++
+    }
+  }
+  return { collected, expected, pending: expected - collected, paidCount }
+}
 
 export function formatMoney(value: number, currency: string): string {
   return `${currency} ${value.toLocaleString('pt-BR', {

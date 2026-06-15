@@ -48,6 +48,8 @@ export interface Participant {
   color: string
   /** Pagou o valor da aposta? */
   paid: boolean
+  /** Valor apostado por esta pessoa. Se ausente, usa o valor padrão do bolão. */
+  betValue?: number
   createdAt: number
 }
 

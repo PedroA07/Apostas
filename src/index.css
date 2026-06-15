@@ -10,6 +10,11 @@
     @apply bg-slate-100 text-slate-800 antialiased;
     margin: 0;
     min-height: 100vh;
+    /* evita o flash cinza ao tocar e o atraso de 300ms em alguns navegadores */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    /* impede rolagem horizontal acidental no celular */
+    overflow-x: hidden;
   }
   /* esconde as setas dos inputs numéricos para um visual mais limpo */
   input[type='number']::-webkit-outer-spin-button,
@@ -42,8 +47,9 @@
   .btn-danger {
     @apply btn bg-red-50 text-red-600 hover:bg-red-100;
   }
+  /* text-base (16px) evita o zoom automático dos campos no iOS */
   .input {
-    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-pitch-500 focus:ring-2 focus:ring-pitch-500/20 placeholder:text-slate-400;
+    @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base outline-none transition focus:border-pitch-500 focus:ring-2 focus:ring-pitch-500/20 placeholder:text-slate-400;
   }
   .label {
     @apply block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5;

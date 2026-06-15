@@ -9,8 +9,11 @@ os palpites de cada jogo e acompanhar o ranking e a premiação automaticamente.
 ## ✨ O que dá pra fazer
 
 - **Painel** com o prêmio total acumulado, próximos jogos e líder do bolão.
-- **Participantes (amigos)**: adicione todo mundo, marque quem já pagou a aposta
-  e acompanhe quanto foi arrecadado e quanto falta receber.
+- **Participantes (amigos)**: adicione todo mundo com o **valor que cada um
+  aposta** (com um valor padrão para agilizar), marque quem já pagou e acompanhe
+  quanto foi arrecadado e quanto falta receber.
+- **Feito para o celular**: layout responsivo de verdade, com navegação inferior,
+  campos que não dão zoom indesejado no iOS e respeito à área segura (notch).
 - **Jogos**: calendário organizado por **grupos e fases** (da fase de grupos até a
   final). Lance os resultados oficiais de cada partida. Os 72 jogos da fase de
   grupos já vêm gerados — e você pode editar tudo ou adicionar os jogos do
@@ -90,10 +93,11 @@ vercel --prod   # publicar em produção
 
 ## 📲 Como usar com os amigos
 
-1. Em **Configurações**, ajuste o nome do bolão, o **valor da aposta** e a
+1. Em **Configurações**, ajuste o nome do bolão, o **valor padrão da aposta** e a
    divisão do prêmio. Confira/edite os **grupos** da Copa (já vêm preenchidos) e
    clique em *Salvar grupos e gerar jogos*.
-2. Na aba **Amigos**, adicione todo mundo e marque quem já pagou.
+2. Na aba **Amigos**, adicione todo mundo. Digite o valor de cada um (ou deixe em
+   branco para usar o padrão) e marque quem já pagou.
 3. Na aba **Palpites**, registre o placar que cada um cravou para os jogos.
 4. Conforme a Copa acontece, lance os resultados reais na aba **Jogos**.
 5. Acompanhe a disputa na aba **Ranking** — os pontos e os prêmios são
